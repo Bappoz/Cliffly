@@ -11,11 +11,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_ContentIncludedByDefault Remove="captures\52871e38-3b62-4815-9ddb-e2bfd2cc93a9\manifest.json" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="captures\" />
+      <Content Remove="captures/**" />
+      <None Remove="captures/**" />
     </ItemGroup>
 
 </Project>

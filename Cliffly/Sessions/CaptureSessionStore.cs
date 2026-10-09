@@ -2,52 +2,64 @@ using System.Text.Json;
 
 namespace Cliffly.Sessions;
 
-public class CaptureSessionStore
+public sealed class CaptureSessionStore(string captureRoot)
 {
-    private readonly string _captureRoot;
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    public string Root { get; } = Path.GetFullPath(captureRoot);
+    public string GetSessionDirectory(Guid sessionId) => Path.Combine(Root, sessionId.ToString());
 
-    public CaptureSessionStore(string captureRoot)
-    {
-        _captureRoot = captureRoot;
-    }
-    
-    public string GetSessionDirectory(Guid sessionId) => 
-        Path.Combine(_captureRoot, sessionId.ToString());
-
-    public CaptureSession Create()
+    public async Task<CaptureSession> CreateAsync(CancellationToken cancellationToken = default)
     {
         var session = new CaptureSession
         {
-            SessionId = Guid.NewGuid(),
-            CreatedAt = DateTimeOffset.UtcNow,
-            Status = "pending",
-            FrameIntervalSeconds = 1,
-            FrameCount = 0,
-            Error = null,
+            SessionId = Guid.NewGuid(), CreatedAt = DateTimeOffset.UtcNow,
+            Status = "pending", FrameIntervalSeconds = 1
         };
-
         Directory.CreateDirectory(GetSessionDirectory(session.SessionId));
-        Save(session);
-        
+        await SaveAsync(session, cancellationToken);
         return session;
     }
 
-    public CaptureSession? TryGet(Guid sessionId)
+    public async Task<CaptureSession?> TryGetAsync(Guid sessionId, CancellationToken cancellationToken = default)
     {
-        var manifestPath = Path.Combine(GetSessionDirectory(sessionId), "manifest.json");
-
-        if (!File.Exists(manifestPath))
+        var path = Path.Combine(GetSessionDirectory(sessionId), "manifest.json");
+        try
         {
-            return null;
+            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.Asynchronous);
+            return await JsonSerializer.DeserializeAsync<CaptureSession>(stream, cancellationToken: cancellationToken);
         }
-        var json = File.ReadAllText(manifestPath);
-        return JsonSerializer.Deserialize<CaptureSession>(json);
+        catch (FileNotFoundException) { return null; }
+        catch (DirectoryNotFoundException) { return null; }
     }
 
-    public void Save(CaptureSession session)
+    public async Task SaveAsync(CaptureSession session, CancellationToken cancellationToken = default)
     {
-        var manifestPath = Path.Combine(GetSessionDirectory(session.SessionId), "manifest.json");
-        var json = JsonSerializer.Serialize(session, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(manifestPath, json);
+        var directory = GetSessionDirectory(session.SessionId);
+        var path = Path.Combine(directory, "manifest.json");
+        var temporary = Path.Combine(directory, $"manifest-{Guid.NewGuid()}.tmp");
+        try
+        {
+            await using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write,
+                FileShare.None, 4096, FileOptions.Asynchronous))
+            {
+                await JsonSerializer.SerializeAsync(stream, session, JsonOptions, cancellationToken);
+                await stream.FlushAsync(cancellationToken);
+            }
+            File.Move(temporary, path, overwrite: true);
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+
+    public async Task RecoverInterruptedAsync(CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(Root);
+        foreach (var directory in Directory.EnumerateDirectories(Root))
+        {
+            if (!Guid.TryParse(Path.GetFileName(directory), out var id)) continue;
+            var session = await TryGetAsync(id, cancellationToken);
+            if (session?.Status == "processing")
+                await SaveAsync(session with { Status = "error", Error = "Processamento interrompido. Crie uma nova sessão para reenviar." }, cancellationToken);
+        }
     }
 }
