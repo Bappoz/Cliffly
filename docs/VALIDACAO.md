@@ -10,9 +10,9 @@ simulados de dispositivo físico e mede somente este ambiente.
 | ----------------------------------------------------- | ------------------------------------------------------- |
 | Projeção, cor, profundidade, estabilidade e snapshots | 9 testes Node aprovados                                 |
 | API, manifests e processos FFmpeg                     | 10 testes .NET Release aprovados                        |
-| Interface compilada no Chromium                       | 9 fluxos offline aprovados; teste de rede separado        |
+| Interface compilada no Chromium                       | 9 fluxos offline aprovados; teste de rede separado      |
 | Inferência real de profundidade no browser            | Aprovada, sem respostas simuladas                       |
-| Build Vite e publish .NET Release                     | Aprovados           |
+| Build Vite e publish .NET Release                     | Aprovados                                               |
 | Revisão visual                                        | Desktop 1440 px e móvel 390 px, sem overflow horizontal |
 | CI GitHub                                             | Configurado; aguardando primeiro push e execução        |
 
