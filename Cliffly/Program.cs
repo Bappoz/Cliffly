@@ -101,12 +101,13 @@ app.MapGet("/sessions/{sessionId:guid}/world", async (Guid sessionId, CaptureSes
         ? Results.File(path, "application/json", $"cliffly-{sessionId}.json")
         : Results.Conflict(new { error = "O mundo ainda não está pronto." });
 });
-app.MapGet("/sessions/{sessionId:guid}/video", async (Guid sessionId, CaptureSessionStore store, CancellationToken cancellationToken) =>
+app.MapGet("/sessions/{sessionId:guid}/video", async (Guid sessionId, bool? preview, CaptureSessionStore store, CancellationToken cancellationToken) =>
 {
     var session = await store.TryGetAsync(sessionId, cancellationToken);
     var path = Path.Combine(store.GetSessionDirectory(sessionId), "video.mp4");
+    var contentType = session?.VideoExtension switch { ".mp4" => "video/mp4", ".webm" => "video/webm", ".mov" => "video/quicktime", _ => "application/octet-stream" };
     return session is not null && session.Status == "done" && File.Exists(path)
-        ? Results.File(path, "application/octet-stream", $"cliffly-{sessionId}{session.VideoExtension}", enableRangeProcessing: true)
+        ? Results.File(path, contentType, preview == true ? null : $"cliffly-{sessionId}{session.VideoExtension}", enableRangeProcessing: true)
         : Results.NotFound();
 });
 app.Run();

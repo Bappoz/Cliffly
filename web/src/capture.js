@@ -311,6 +311,17 @@ async function processCapture(existingId, retry = false) {
     let scheduled = false;
     while (current === generation) {
       session = await api(`/sessions/${sessionId}`);
+      if (existingId && session.status === "done") {
+        const savedUrl = `/sessions/${sessionId}/video?preview=true`;
+        if (!$("capture-video").src.endsWith(savedUrl)) {
+          $("capture-video").srcObject = null;
+          $("capture-video").src = savedUrl;
+          $("capture-video").controls = true;
+          $("capture-empty").hidden = true;
+          $("video-info").textContent =
+            "Gravação salva nesta sessão · disponível para baixar";
+        }
+      }
       if (session.status === "error") throw new Error(session.error);
       if (session.status === "pending")
         throw new Error(

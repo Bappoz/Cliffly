@@ -24,7 +24,7 @@ public sealed class ReconstructionTests : IDisposable
         await store.SaveAsync(session with { Status = "done", FrameCount = 4 });
         var url = $"/sessions/{session.SessionId}";
         var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => client.PostAsync(url + "/reconstruction", null)));
-        Assert.Single(responses.Where(r => r.StatusCode == HttpStatusCode.Accepted));
+        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Accepted);
         Assert.Equal(7, responses.Count(r => r.StatusCode == HttpStatusCode.Conflict));
         await runner.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
         var active = (await client.GetFromJsonAsync<CaptureSession>(url))!;
@@ -85,6 +85,27 @@ public sealed class ReconstructionTests : IDisposable
         Assert.Equal("done", recovered.Status);
         Assert.Equal("failed", recovered.ReconstructionStatus);
         Assert.Contains("reinício", recovered.ReconstructionMessage);
+    }
+
+    [Fact]
+    public async Task SavedVideoSupportsDownloadAndRangePreview()
+    {
+        await using var factory = new Factory(root, new TestRunner());
+        using var client = factory.CreateClient();
+        var store = factory.Services.GetRequiredService<CaptureSessionStore>();
+        var session = await store.CreateAsync();
+        await store.SaveAsync(session with { Status = "done", FrameCount = 4, VideoExtension = ".webm" });
+        await File.WriteAllBytesAsync(Path.Combine(store.GetSessionDirectory(session.SessionId), "video.mp4"), [1, 2, 3, 4, 5, 6]);
+        var url = $"/sessions/{session.SessionId}/video";
+        var download = await client.GetAsync(url);
+        Assert.Equal("video/webm", download.Content.Headers.ContentType!.MediaType);
+        Assert.Contains(".webm", download.Content.Headers.ContentDisposition!.FileNameStar);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url + "?preview=true");
+        request.Headers.Range = new(0, 2);
+        var preview = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.PartialContent, preview.StatusCode);
+        Assert.Null(preview.Content.Headers.ContentDisposition);
+        Assert.Equal(new byte[] { 1, 2, 3 }, await preview.Content.ReadAsByteArrayAsync());
     }
 
     private static async Task<CaptureSession> WaitForCompletion(HttpClient client, string url)
