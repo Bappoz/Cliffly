@@ -25,7 +25,7 @@ export class WorldViewer {
     this.mesh = new THREE.InstancedMesh(
       new THREE.BoxGeometry(),
       this.material,
-      MAX_WORLD_BLOCKS,
+      1,
     );
     this.mesh.count = 0;
     this.mesh.frustumCulled = false;
@@ -93,6 +93,17 @@ export class WorldViewer {
     this.last = performance.now();
   }
   setWorld(world) {
+    const count = world.points.length / 7;
+    if (count > MAX_WORLD_BLOCKS)
+      throw new Error("O mundo excede o limite de blocos.");
+    if (count > this.mesh.instanceMatrix.count) {
+      const geometry = this.mesh.geometry;
+      this.scene.remove(this.mesh);
+      this.mesh.dispose();
+      this.mesh = new THREE.InstancedMesh(geometry, this.material, count);
+      this.mesh.frustumCulled = false;
+      this.scene.add(this.mesh);
+    }
     this.world = world;
     const box = new THREE.Box3();
     const object = new THREE.Object3D(),
