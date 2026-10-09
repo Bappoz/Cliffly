@@ -22,7 +22,7 @@ O protótipo anterior transformava um frame em uma superfície de cubos. Ele per
 - Não inventar superfícies escondidas, objetos ou geometria a partir do brilho.
 - Pouca textura, reflexos, movimento e desfoque podem impedir a reconstrução. Informar a falha e sugerir nova captura.
 - O resultado é uma reconstrução de superfícies observadas em blocos; não é um mapa semântico completo nem um arquivo do jogo Minecraft.
-- O processamento é posterior à gravação, local no servidor, e pode demorar minutos. Nenhuma API paga ou GPU é obrigatória.
+- A reconstrução final é posterior à gravação e pode demorar minutos. A captura guiada adiciona uma prévia incremental durante a gravação. Ambos os motores rodam localmente, sem API paga ou GPU obrigatória.
 
 ## Chunks e issues
 

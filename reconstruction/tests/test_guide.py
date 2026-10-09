@@ -48,6 +48,9 @@ def test_incremental_scene_grows_and_recovers_without_fusing_lost_frames(tmp_pat
     snapshot = json.dumps(world)
     assert mapper.process(np.zeros((480, 640, 3), dtype=np.uint8))['tracking'] == 'low_texture'
     assert json.dumps(mapper.current_world) == snapshot
+    rng = np.random.default_rng(5)
+    assert mapper.process(rng.integers(0, 255, (480, 640, 3), dtype=np.uint8))['tracking'] == 'lost'
+    assert json.dumps(mapper.current_world) == snapshot
     last = cv2.imread(str(tmp_path / 'frames/0018.jpg'))
     before = mapper.revision
     for _ in range(3):
@@ -55,3 +58,16 @@ def test_incremental_scene_grows_and_recovers_without_fusing_lost_frames(tmp_pat
     assert mapper.revision == before
     assert np.isfinite(world['points']).all()
     assert max(s['milliseconds'] for s in states) < 10000
+
+
+def test_pure_camera_rotation_does_not_bootstrap_geometry(tmp_path):
+    generate(tmp_path / 'frames', count=2)
+    image = cv2.imread(str(tmp_path / 'frames/0001.jpg'))
+    mapper = GuidedMapper(tmp_path / 'scan', focal=640*.82)
+    mapper.process(image)
+    k = mapper.k
+    for degrees in [2, 4, 6]:
+        rotation = cv2.Rodrigues(np.array([0., np.deg2rad(degrees), 0.]))[0]
+        rotated = cv2.warpPerspective(image, k @ rotation @ np.linalg.inv(k), (640, 480))
+        assert mapper.process(rotated)['blocks'] == 0
+    assert mapper.scale is None

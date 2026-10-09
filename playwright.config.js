@@ -14,6 +14,11 @@ export default defineConfig({
         "--use-fake-ui-for-media-stream",
         "--use-fake-device-for-media-stream",
         "--enable-unsafe-swiftshader",
+        ...(process.env.CLIFFLY_REAL_GUIDE
+          ? [
+              `--use-file-for-fake-video-capture=${process.env.CLIFFLY_TEST_GUIDE_VIDEO || "/tmp/cliffly-multiview/camera.y4m"}`,
+            ]
+          : []),
       ],
     },
     permissions: ["camera"],
@@ -26,7 +31,7 @@ export default defineConfig({
       url: "http://localhost:5174",
       reuseExistingServer: !process.env.CI,
     },
-    ...(process.env.CLIFFLY_REAL_RECON
+    ...(process.env.CLIFFLY_REAL_RECON || process.env.CLIFFLY_REAL_GUIDE
       ? [
           {
             command:

@@ -1,3 +1,30 @@
+# Validação da captura guiada
+
+Data: 2026-10-09. A prévia incremental é experimental e foi verificada separadamente do refinamento offline.
+
+## Geometria e cobertura
+
+- Cena sintética com deslocamento conhecido, processada incrementalmente com ORB, inicialização epipolar, PnP, triangulação e estéreo em CPU. O motor não recebe poses prontas.
+- Câmera parada e rotação pura não inicializam um mundo. Desfoque/pouca textura e uma imagem sem correspondências não alteram o último modelo válido.
+- Repetir o mesmo frame não aumenta revisões ou cobertura. A evidência exige vistas distintas e diversidade angular; espaços desconhecidos não recebem voxels artificiais.
+- Limites de blocos preservam a mesma grade e escala ao longo do scan.
+
+## Integração durante a gravação
+
+O Chromium usou uma câmera simulada alimentada por vídeo Y4M de uma sala sintética em movimento. O navegador enviou JPEGs reais à API, que supervisionou o worker Python real. A gravação completa continuou em paralelo. Ao parar, o processo foi encerrado e o mundo permaneceu disponível.
+
+Nesse experimento: 11 amostras, 9 vistas úteis, 3.441 blocos observados e 1.392 com evidência de várias vistas/ângulos. A última amostra levou 1.192 ms no worker. No protótipo direto, acompanhamento de pose ficou perto de 100 ms e densificação entre 500 e 800 ms. São medidas deste ambiente, não uma garantia de taxa para outros notebooks.
+
+Os seis testes específicos do navegador passaram, incluindo modelo crescente sem reset da navegação, alternância de cores/cobertura, perda de tracking, falha da prévia sem perder a gravação, gravação sem prévia e encerramento de um worker que iniciou depois do usuário parar.
+
+API: 22 testes C# aprovados, incluindo concorrência limitada, JPEG vazio/tamanho excessivo, worker inativo, reinício e parada durante processamento. JavaScript: 14 testes. Python: 11 aprovados e um teste SfM demorado omitido nesta execução; a reconstrução completa é coberta também pelo teste integrado de vídeo.
+
+## Limites
+
+A câmera usada é simulada; a cena é sintética. A precisão da câmera física, calibração e deriva em trajetórias longas ainda precisam ser medidas. Verde indica diversidade de observações, não precisão métrica ou conclusão de todo o ambiente. A prévia não implementa fechamento global de trajetórias ou ajuste contínuo de feixes. O motor final continua refinando a gravação.
+
+---
+
 # Validação do fluxo vídeo → mundo 3D
 
 Data: 2026-10-08. Linux, Python 3.11, PyCOLMAP 4.2.1, OpenCV 4.13,

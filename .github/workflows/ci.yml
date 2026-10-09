@@ -39,10 +39,12 @@ jobs:
         run: |
           .venv/bin/python reconstruction/synthetic.py /tmp/cliffly-multiview/frames
           ffmpeg -y -v error -framerate 1 -i /tmp/cliffly-multiview/frames/%04d.jpg -c:v libx264 -crf 18 -pix_fmt yuv420p /tmp/cliffly-multiview/room.mp4
+          ffmpeg -y -v error -framerate 1 -i /tmp/cliffly-multiview/frames/%04d.jpg -vf fps=30 -pix_fmt yuv420p -f yuv4mpegpipe /tmp/cliffly-multiview/camera.y4m
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
         env:
           CLIFFLY_REAL_RECON: "1"
+          CLIFFLY_REAL_GUIDE: "1"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
