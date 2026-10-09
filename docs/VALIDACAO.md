@@ -1,4 +1,32 @@
-# Validação da primeira versão
+# Validação do fluxo vídeo → mundo 3D
+
+Data: 2026-10-08. Linux, Python 3.11, PyCOLMAP 4.2.1, OpenCV 4.13,
+.NET 10.0.302, Node 22.23.1 e Chromium Headless Shell 156.
+
+## Evidência geométrica
+
+A sala sintética é gerada por ray casting de paredes e três objetos, com texturas determinísticas e 18 câmeras que se deslocam. Os testes não fornecem poses ao motor. PyCOLMAP estima as câmeras, triangula e faz ajuste de feixes; OpenCV retifica pares estimados e gera pontos por disparidade. A fusão usa as cores observadas.
+
+O primeiro experimento registrou 18/18 vistas, 5.111 pontos esparsos, 336.679 pontos densos e 55.941 blocos em 43 segundos. A revisão identificou que limites derivados apenas dos pontos esparsos podiam cortar objetos próximos. Os limites passaram a incluir a trajetória; o teste completo agora exige também superfícies em primeiro plano.
+
+Depois da correção, o teste direto registrou 18 vistas, 434.778 pontos densos e 62.236 blocos em 65,8 segundos (execução concorrente com testes de navegador). A superfície mais próxima ficou em z = -8,04 na escala normalizada, dentro do limite exigido pelo teste de primeiro plano.
+
+No teste integrado com vídeo MP4, FFmpeg, API e navegador reais: 18 frames registrados, 602.325 pontos densos e 79.196 blocos, com 87,5 segundos de processamento. O mundo foi baixado e reaberto após recarregar a página. As métricas variam com compressão e correspondências.
+
+O teste estéreo separado usa baseline, focal e disparidade conhecidos e verifica profundidade numérica. Outros testes cobrem cores médias, limite de voxels, coordenadas não finitas e falha sem frames suficientes.
+
+## Testes
+
+- JavaScript: 13 testes de projeção e validação/exportação de mundos.
+- C#: 16 testes, incluindo FFmpeg real, uploads concorrentes, jobs duplicados, progresso, falha/retry e recuperação após reinício.
+- Python: 6 testes incluindo execução explícita de SfM e estéreo reais em CPU.
+- Navegador: 19 testes aprovados; apenas a inferência de profundidade do laboratório é omitida nesta execução. Inclui teste real de vídeo/API/motor em CPU e captura/revisão/download, liberação da webcam, upload/progresso/retomada, navegação/exportação, formatos inválidos, indisponibilidade do motor e layout móvel. Fluxos simulados de API são separados do teste com vídeo/API/motor reais.
+
+## Limites da evidência
+
+A cena geométrica é sintética. A webcam automatizada é a câmera simulada do Chromium. Ainda não foi avaliada a fidelidade de uma filmagem real de notebook, com calibração e medidas de referência. Não se afirma precisão métrica, classificação semântica ou reconstrução de superfícies ocultas.
+
+# Histórico: validação do laboratório por frame
 
 Data: 2026-10-08. Ambiente: Arch/Omarchy, .NET 10.0.302, Node 22.23.1,
 Chromium Headless Shell 156 (Playwright). Este registro distingue testes

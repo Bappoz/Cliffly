@@ -1,151 +1,104 @@
 # Cliffly
 
-Seu ambiente em blocos, a partir da webcam do notebook. Um Studio local para
-experimentar cores, congelar instantes e explorar uma superfície 3D.
+**Grave um ambiente, salve o vídeo, reconstrua várias vistas e explore o mundo 3D em blocos.**
 
-## Experimente
+O produto principal agora faz análise posterior da gravação. As posições vêm de correspondências entre frames e triangulação multivista. O mundo é persistente e não muda com a reprodução do vídeo.
 
-Requisitos: Node.js 22.12+ e npm. Para a API: .NET SDK 10 e FFmpeg no PATH.
+## Executar localmente
 
-```bash
-npm ci
-npm run dev
-```
-
-Abra **http://localhost:5173**. A demonstração funciona sem câmera. Clique em
-**Usar webcam** e permita o acesso. Nenhum vídeo é enviado ao backend automaticamente.
-
-Em sistemas com libvips instalado que façam o Sharp tentar compilar do zero:
-
-```bash
-SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci
-```
-
-## O que já funciona
-
-- Webcam selecionável, vídeo local e uma demonstração com profundidade sintética.
-- Superfície de blocos com cores e enquadramento da imagem.
-- Profundidade relativa opcional com Depth Anything V2 Small no navegador.
-- Órbita, zoom, congelamento, comparação sem iluminação artística e paleta opcional.
-- Exportação JSON reimportável, PLY (nuvem de pontos com cor e tamanho de bloco) e PNG.
-- Qualidade ajustável e configurações locais persistidas; frames não são salvos automaticamente.
-- Interface em português, teclado, layout móvel e preferência por movimento reduzido.
-- API C# de sessões e extração de frames supervisionada com FFmpeg.
-
-**Fidelidade:** o modo básico é plano. A IA estima profundidade relativa, sem metros,
-sem superfícies escondidas e sem rastrear a pose. Mover a câmera atualiza a superfície
-vista; ainda não constrói um mundo persistente de todo o cômodo. A paleta de blocos é
-artística; use cores originais + Comparar cores para preservar RGB sem iluminação.
-Não há ainda identificação semântica de objetos ou exportação de mundo Minecraft.
-
-## Controles
-
-Arraste a cena para girar e role para aproximar. **Vista original** restaura a
-projeção da captura. **Congelar cena** permite explorar um instante; a câmera fica
-ativa até **Desligar**. **Espaço** congela quando o foco não está em um controle.
-No canvas: setas giram, `+`/`−` aproximam/afastam e `Home` restaura a vista.
-
-A IA baixa pesos na primeira ativação e os processa em um Web Worker, com WebGPU quando disponível e WASM como alternativa. O download
-pode ser cancelado e falhas devolvem o modo básico. A cor e o mapa de profundidade
-pertencem ao mesmo frame. A velocidade real depende do hardware; o Studio mostra
-quadros/s processados, backend e tempo de inferência. A entrada da IA é reduzida
-para 224 pixels (preservando proporção e múltiplos de 14), trocando detalhe fino por
-menor latência; a resolução de blocos é um controle independente. Não promete 30 FPS de IA em CPU.
-Internet é necessária para baixar o modelo; a reutilização offline depende do cache
-do navegador. O runtime ONNX é servido localmente. Não há API de inferência paga.
-
-## Interface compilada + API
+Requisitos: Node.js 22.12+, .NET SDK 10, Python 3.11+ e FFmpeg/ffprobe no PATH. O motor funciona em CPU; não precisa de GPU ou API paga.
 
 ```bash
 npm ci
+python3 -m venv .venv
+.venv/bin/python -m pip install -r reconstruction/requirements.txt
 npm run build
 dotnet run --project Cliffly
 ```
 
-Abra **http://localhost:5000**. A API hospeda os arquivos compilados em `wwwroot`.
-Não é preciso executar o servidor Vite nesse modo. O build do frontend deve acontecer
-antes de `dotnet publish`.
+Abra **http://localhost:5000**. No Windows, use `.venv\Scripts\python.exe` nos comandos Python. Se preferir uv: `uv venv .venv` e `uv pip install --python .venv/bin/python -r reconstruction/requirements.txt`.
+
+Em máquinas com libvips que provoquem compilação do Sharp, use `SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci`.
+
+Para editar a interface, mantenha a API rodando e execute `npm run dev` em outro terminal. Abra http://localhost:5173; o Vite encaminha `/sessions` e `/health` à API.
+
+## Como usar
+
+1. Clique em **Gravar com webcam**, mova a câmera lentamente e pare a gravação; ou importe um vídeo.
+2. Reveja e use **Baixar gravação** para guardar uma cópia local.
+3. Clique em **Salvar e gerar mundo**. O vídeo é salvo na sessão e o processamento acontece no servidor local.
+4. Acompanhe extração dos frames, correspondências, poses, estéreo e fusão. O processo pode levar minutos.
+5. Explore em órbita ou clique em **Entrar no mundo**. WASD move, E/espaço sobe, Q desce, Shift acelera; clique na cena para olhar com o mouse, Esc libera. Setas também orientam e Home volta à vista inicial.
+6. Baixe o mundo JSON ou os pontos PLY. **Abrir mundo** reabre um resultado sem processar novamente. A URL da sessão e o histórico local permitem retomar capturas após recarregar.
+
+O botão **Explorar exemplo reconstruído** abre uma sala sintética gerada por ray casting e reconstruída pelo mesmo motor a partir de 18 vistas. Ela é identificada como exemplo sintético, não como filmagem real.
+
+## Capturar bem
+
+Filme objetos parados e com textura, com iluminação estável. Desloque a câmera para os lados ou ao redor deles, mantendo grande sobreposição entre vistas. Apenas girar no mesmo ponto não fornece baseline adequado para profundidade. Evite zoom, movimentos bruscos, reflexos e desfoque. Comece com 10–60 segundos de uma parte do ambiente.
+
+Gravação da webcam: até 120 segundos, sem áudio. Upload: até 128 MiB. Extração: primeiros 120 segundos, uma vista por segundo; o motor seleciona até 60 vistas e reduz imagens para até 800 pixels. Limite de 120 mil blocos com redução automática da resolução espacial.
+
+## O que o resultado representa
+
+- SfM estima intrínsecos, poses e pontos triangulados, com ajuste de feixes.
+- Estéreo retificado em CPU estima superfícies, verifica consistência esquerda/direita e filtra pontos fora dos limites da geometria observada.
+- A fusão ocupa uma grade uniforme e calcula cores médias das observações.
+- As superfícies não observadas ficam vazias. Objetos não são classificados semanticamente nesta versão.
+- A escala é relativa: uma câmera monocular não fornece metros sem referência conhecida.
+- A fidelidade de filmagens reais ainda precisa de avaliação. Paredes lisas, vidro, espelhos e movimento podem gerar buracos, ruído ou falha. O sistema informa falhas e permite tentar novamente.
+- A navegação livre não tem colisões. O JSON é um mundo do visualizador Cliffly; exportação para um arquivo do jogo Minecraft é uma etapa futura (#12).
+
+O laboratório anterior de efeitos por frame está em `/lab.html`. Ele não é o motor de reconstrução do produto.
+
+## Arquitetura e dados
+
+`MediaRecorder/upload → ASP.NET → FFmpeg → PyCOLMAP (SfM CPU) → OpenCV (StereoSGBM) → fusão → world.json → Three.js`.
+
+A API segue em C#. O motor Python é um processo supervisionado, com fila limitada, limite de 20 minutos, progresso persistente, proteção contra jobs duplicados e recuperação após reinício. Documentação técnica: [PyCOLMAP](https://colmap.github.io/pycolmap/pycolmap.html), [calibração e reconstrução OpenCV](https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html).
+
+Cada captura fica em `Cliffly/captures/{guid}/`: vídeo, manifesto, frames, banco de correspondências, modelo SfM, progresso e mundo. A pasta é ignorada pelo Git e excluída do publish. Nenhuma filmagem pessoal é publicada.
+
+Configuração opcional por variáveis de ambiente:
+
+- `CaptureRoot`: diretório de capturas.
+- `Reconstruction__Python`: caminho do Python com as dependências instaladas.
+- `Reconstruction__Script`: caminho de `reconstruct.py`.
+
+No publish, os scripts e requirements acompanham a aplicação. Instale as dependências Python no ambiente de execução e configure `Reconstruction__Python`.
+
+## API
+
+| Endpoint                             | Função                                                 |
+| ------------------------------------ | ------------------------------------------------------ |
+| `GET /health`                        | Saúde e disponibilidade do motor                       |
+| `POST /sessions`                     | Cria uma sessão                                        |
+| `POST /sessions/{id}/video`          | Upload multipart, campo `video`; extrai frames         |
+| `GET /sessions/{id}`                 | Estado da captura e progresso da reconstrução          |
+| `POST /sessions/{id}/reconstruction` | Agenda reconstrução quando os frames estiverem prontos |
+| `GET /sessions/{id}/world`           | Baixa o mundo somente após sucesso                     |
+| `GET /sessions/{id}/video`           | Baixa a gravação salva após extração                   |
+
+## Testar
 
 ```bash
-dotnet publish Cliffly -c Release -o /tmp/cliffly-publish
-```
-
-Endpoints:
-
-| Método | Rota                   | Uso                                    |
-| ------ | ---------------------- | -------------------------------------- |
-| GET    | `/health`              | Estado do servidor                     |
-| POST   | `/sessions`            | Cria uma sessão, retorna 201           |
-| POST   | `/sessions/{id}/video` | Multipart, campo `video`; retorna 202  |
-| GET    | `/sessions/{id}`       | Consulta pending/processing/done/error |
-
-Upload limitado a 128 MiB. Fila limitada a oito sessões aguardando processamento.
-FFmpeg extrai um frame/s dos primeiros 120 s, com dimensão máxima de 1280×720.
-Arquivo vazio retorna 400; upload duplicado/concorrente retorna 409; fila cheia 503.
-Um arquivo com áudio sem vídeo é rejeitado no processamento. Capturas ficam em
-`Cliffly/captures/{id}`; `CaptureRoot` permite configurar outro diretório.
-
-Por padrão o servidor escuta somente localhost. Para testes na rede:
-
-```bash
-dotnet run --project Cliffly --urls http://0.0.0.0:5000
-```
-
-Acesso à câmera pelo navegador exige **localhost ou HTTPS**; abrir um IP de rede em
-HTTP não habilita getUserMedia. A API de ingestão local ainda não tem autenticação.
-
-## Testes
-
-```bash
+npm run format:check
 npm test
-dotnet test Cliffly.sln
+dotnet test Cliffly.sln -c Release
+.venv/bin/python -m pytest reconstruction/tests -q
+CLIFFLY_SFM_TEST=1 .venv/bin/python -m pytest reconstruction/tests -q
 npx playwright install chromium
 npm run test:e2e
 ```
 
-A suíte de navegador usa câmera simulada, não sua webcam física. O teste do modelo
-real é separado, baixa os pesos e executa inferência no worker do navegador:
+O teste SfM completo gera uma cena 3D e usa o motor real em CPU. Para testar vídeo, API e navegador juntos, com a API rodando:
 
 ```bash
-npm run test:depth
+.venv/bin/python reconstruction/synthetic.py /tmp/cliffly-multiview/frames
+ffmpeg -y -framerate 1 -i /tmp/cliffly-multiview/frames/%04d.jpg -c:v libx264 -crf 18 -pix_fmt yuv420p /tmp/cliffly-multiview/room.mp4
+CLIFFLY_REAL_RECON=1 npx playwright test web/e2e/capture.spec.js -g 'real saved video'
 ```
 
-O CI executa matemática/serialização, backend, build e fluxos de navegador sem baixar
-pesos. FFmpeg deve estar instalado para os testes .NET que geram e decodificam vídeo.
-Consulte [o registro de validação](docs/VALIDACAO.md) para resultados e limites.
+`CLIFFLY_TEST_VIDEO` permite escolher outro vídeo de teste. A validação com webcam automatizada usa uma câmera simulada; não substitui a avaliação da câmera física.
 
-## Organização e próximos passos
-
-[Plano completo](docs/PLANO_PRODUTO.md) · [Issues](https://github.com/Bappoz/Cliffly/issues)
-
-A primeira versão cobre as issues 1–7. As próximas etapas são calibração da câmera,
-rastreamento de pose e fusão multivista, segmentação de objetos, fonte Android e
-exportação de mundo Minecraft. Bluetooth será validado com aparelho real: BLE/GATT
-serve para pareamento/controle; o transporte de vídeo precisa de banda e protocolo
-próprios, possivelmente Wi-Fi/WebRTC ou tethering.
-
-```text
-Cliffly/            API .NET, worker FFmpeg e hospedagem do Studio
-Cliffly.Tests/      Testes xUnit e integração ASP.NET
-web/src/            Captura, projeção, renderização e worker de profundidade
-web/tests/          Testes de matemática e snapshots
-web/e2e/            Fluxos de navegador com Playwright
-scripts/            Preparação do ONNX e verificação real do modelo
-docs/               Plano, critérios e registro de validação
-```
-
-Os documentos em `docs/superpowers/` descrevem o plano anterior orientado a MAUI;
-o plano atual é `docs/PLANO_PRODUTO.md`. O histórico antigo e as gravações permanecem
-na branch `master` local; o histórico público `main` começou sem mídia pessoal.
-
-## Dependências e referências
-
-Three.js para renderização e Transformers.js/ONNX Runtime para inferência. O modelo
-é [onnx-community/depth-anything-v2-small](https://huggingface.co/onnx-community/depth-anything-v2-small),
-conversão do [Depth Anything V2 Small](https://github.com/DepthAnything/Depth-Anything-V2).
-Consulte as licenças das bibliotecas e do modelo antes de redistribuir pesos.
-
-A projeção usa um FOV vertical aproximado de 55° e unidades relativas. Calibração
-real está na [issue 8](https://github.com/Bappoz/Cliffly/issues/8), reconstrução
-persistente na [issue 9](https://github.com/Bappoz/Cliffly/issues/9) e celular/Bluetooth
-na [issue 11](https://github.com/Bappoz/Cliffly/issues/11).
+Plano e issues: [PLANO_PRODUTO.md](docs/PLANO_PRODUTO.md), [issues públicas](https://github.com/Bappoz/Cliffly/issues). Evidências: [VALIDACAO.md](docs/VALIDACAO.md).

@@ -88,7 +88,7 @@ test("camera denial gives an import option", async ({ page }) => {
 test("saved world is navigable, exportable and reopens without a video", async ({
   page,
 }) => {
-  test.setTimeout(60000);
+  test.setTimeout(90000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");

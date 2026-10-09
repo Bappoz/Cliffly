@@ -20,9 +20,23 @@ export default defineConfig({
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
-  webServer: {
-    command: "npm run preview -- --port 5174 --strictPort",
-    url: "http://localhost:5174",
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: "npm run preview -- --port 5174 --strictPort",
+      url: "http://localhost:5174",
+      reuseExistingServer: !process.env.CI,
+    },
+    ...(process.env.CLIFFLY_REAL_RECON
+      ? [
+          {
+            command:
+              "dotnet run --project Cliffly -c Release --no-build --no-launch-profile",
+            url: "http://localhost:5000/health",
+            reuseExistingServer: !process.env.CI,
+            env: { CaptureRoot: "/tmp/cliffly-browser-captures" },
+            timeout: 60000,
+          },
+        ]
+      : []),
+  ],
 });

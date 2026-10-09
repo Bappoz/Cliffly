@@ -19,6 +19,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: npm ci
@@ -27,8 +30,19 @@ jobs:
       - run: npm run build
       - run: dotnet test Cliffly.sln -c Release
       - run: dotnet publish Cliffly -c Release -o /tmp/cliffly-publish
+      - name: Install CPU reconstruction engine
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r reconstruction/requirements.txt
+      - run: .venv/bin/python -m pytest reconstruction/tests -q
+      - name: Generate synthetic multiview video
+        run: |
+          .venv/bin/python reconstruction/synthetic.py /tmp/cliffly-multiview/frames
+          ffmpeg -y -v error -framerate 1 -i /tmp/cliffly-multiview/frames/%04d.jpg -c:v libx264 -crf 18 -pix_fmt yuv420p /tmp/cliffly-multiview/room.mp4
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+        env:
+          CLIFFLY_REAL_RECON: "1"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
