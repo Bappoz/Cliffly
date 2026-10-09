@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 
 const ready = async (page) => {
-  await page.goto("/");
+  await page.goto("/lab.html");
   await expect(page.locator("#block-counter")).not.toHaveText("0 BLOCOS");
 };
 

@@ -5,7 +5,10 @@ export default defineConfig({
   build: {
     outDir: "../Cliffly/wwwroot",
     emptyOutDir: true,
-    rollupOptions: { output: { manualChunks: { three: ["three"] } } },
+    rollupOptions: {
+      input: { main: "web/index.html", lab: "web/lab.html" },
+      output: { manualChunks: { three: ["three"] } },
+    },
   },
   worker: { format: "es" },
   optimizeDeps: { include: ["@huggingface/transformers"] },
