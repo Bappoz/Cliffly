@@ -6,18 +6,21 @@ simulados de dispositivo físico e mede somente este ambiente.
 
 ## Resultados
 
-| Verificação                                           | Resultado                                               |
-| ----------------------------------------------------- | ------------------------------------------------------- |
-| Projeção, cor, profundidade, estabilidade e snapshots | 9 testes Node aprovados                                 |
-| API, manifests e processos FFmpeg                     | 10 testes .NET Release aprovados                        |
-| Interface compilada no Chromium                       | 9 fluxos offline aprovados; teste de rede separado      |
-| Inferência real de profundidade no browser            | Aprovada, sem respostas simuladas                       |
-| Build Vite e publish .NET Release                     | Aprovados                                               |
-| Revisão visual                                        | Desktop 1440 px e móvel 390 px, sem overflow horizontal |
-| CI GitHub                                             | Configurado; aguardando primeiro push e execução        |
+| Verificação                                           | Resultado                                                                              |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Projeção, cor, profundidade, estabilidade e snapshots | 9 testes Node aprovados                                                                |
+| API, manifests e processos FFmpeg                     | 10 testes .NET Release aprovados                                                       |
+| Interface compilada no Chromium                       | 9 fluxos offline aprovados; teste de rede separado                                     |
+| Inferência real de profundidade no browser            | Aprovada, sem respostas simuladas                                                      |
+| Build Vite e publish .NET Release                     | Aprovados                                                                              |
+| Revisão visual                                        | Desktop 1440 px e móvel 390 px, sem overflow horizontal                                |
+| CI GitHub                                             | [Aprovado](https://github.com/Bappoz/Cliffly/actions/runs/37872192285), commit 7385270 |
 
 A câmera usada no teste automatizado é o dispositivo simulado do Chromium.
 Vídeos de teste são gerados por FFmpeg, sem usar gravações pessoais.
+O pacote ASP.NET publicado também foi aberto no Chromium: demo renderizando
+4.800 blocos, saúde 200, WASM 200 (`application/wasm`) e módulo 200 (`text/javascript`),
+sem erros JavaScript.
 
 ## Inferência real
 
