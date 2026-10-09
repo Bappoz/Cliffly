@@ -39,3 +39,13 @@ As issues #13–#17 foram implementadas, testadas e encerradas. Cada chunk receb
 Browser (MediaRecorder / upload / Three.js) → API ASP.NET → FFmpeg → worker Python (PyCOLMAP + OpenCV) → world.json + modelo SfM → browser.
 
 A API continua em C#. A separação do worker permite substituir o motor de visão sem alterar o fluxo do produto.
+
+## Captura guiada — nova evolução (#18–#22)
+
+Enquanto o vídeo é gravado, enviar amostras reduzidas ao motor incremental. Estimar pose, triangular e fusionar superfícies observadas em coordenadas persistentes. Atualizar uma prévia em blocos e destacar pouca diversidade de vistas em amarelo e boa evidência em verde. Espaços vazios permanecem desconhecidos.
+
+A prévia usa OpenCV (ORB, geometria epipolar, PnP e estéreo) e intrínsecos aproximados. Não é um sistema SLAM completo: não tem fechamento de trajetórias nem ajuste global contínuo. Serve para orientar a captura; o motor multivista posterior continua refinando o mundo final.
+
+Transportar um frame por vez, sem acumular fila no navegador. Densificar apenas keyframes com deslocamento útil. Manter o vídeo completo independente da prévia e liberar o worker ao terminar ou após inatividade. Medir latência antes de prometer taxas de atualização.
+
+Chunks: #18 motor incremental; #19 cobertura/orientação; #20 API/lifecycle; #21 experiência guiada; #22 testes integrados e documentação.
