@@ -30,18 +30,19 @@ app.MapPost("/sessions/{sessionId:guid}/video", async (Guid sessionId, IFormFile
     var directory = store.GetSessionDirectory(sessionId);
     var destination = Path.Combine(directory, "video.mp4");
     var temporary = Path.Combine(directory, "video.upload");
-    FileStream stream;
-    try { stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous); }
-    catch (IOException) when (File.Exists(temporary))
-    { return Results.Conflict(new { error = "Já existe um upload em andamento." }); }
+    if (!store.TryBeginUpload(sessionId))
+        return Results.Conflict(new { error = "Já existe um upload em andamento." });
+    var ownsVideo = false;
+    var enqueued = false;
     try
     {
-        await using (stream)
+        if (File.Exists(destination)) return Results.Conflict(new { error = "Essa sessão já tem um vídeo." });
+        await using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
         {
-            if (File.Exists(destination)) return Results.Conflict(new { error = "Essa sessão já tem um vídeo." });
             await video.CopyToAsync(stream, cancellationToken);
         }
         File.Move(temporary, destination);
+        ownsVideo = true;
         var processing = session with { Status = "processing", Error = null };
         await store.SaveAsync(processing, cancellationToken);
         if (!worker.TryEnqueue(processing))
@@ -50,9 +51,23 @@ app.MapPost("/sessions/{sessionId:guid}/video", async (Guid sessionId, IFormFile
             await store.SaveAsync(session, CancellationToken.None);
             return Results.Json(new { error = "Fila cheia. Tente novamente em alguns segundos." }, statusCode: 503);
         }
+        enqueued = true;
         return Results.Accepted($"/sessions/{sessionId}", processing);
     }
-    finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    catch
+    {
+        if (ownsVideo && !enqueued)
+        {
+            if (File.Exists(destination)) File.Delete(destination);
+            await store.SaveAsync(session, CancellationToken.None);
+        }
+        throw;
+    }
+    finally
+    {
+        try { if (File.Exists(temporary)) File.Delete(temporary); }
+        finally { store.FinishUpload(sessionId); }
+    }
 }).DisableAntiforgery();
 app.MapGet("/sessions/{sessionId:guid}", async (Guid sessionId, CaptureSessionStore store, CancellationToken cancellationToken) =>
 {

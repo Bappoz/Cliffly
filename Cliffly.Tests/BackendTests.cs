@@ -99,11 +99,15 @@ public sealed class BackendTests : IDisposable
         Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync(url, duplicate)).StatusCode);
     }
 
-    [Fact]
-    public async Task RealUploadCompletesAndConcurrentUploadCannotOverwrite()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task RealUploadCompletesAndConcurrentUploadCannotOverwrite(int iteration)
     {
         Directory.CreateDirectory(root);
-        var video = Path.Combine(root, "source.mp4");
+        var video = Path.Combine(root, $"source-{iteration}.mp4");
         await Ffmpeg("-f", "lavfi", "-i", "testsrc2=s=64x48:r=10", "-t", "2", video);
         await using var factory = new Factory(root);
         using var client = factory.CreateClient();

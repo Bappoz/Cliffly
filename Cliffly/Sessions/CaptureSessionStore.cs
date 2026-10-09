@@ -1,9 +1,14 @@
 using System.Text.Json;
+using System.Collections.Concurrent;
 
 namespace Cliffly.Sessions;
 
 public sealed class CaptureSessionStore(string captureRoot)
 {
+    private readonly ConcurrentDictionary<Guid, byte> uploads = new();
+    public bool TryBeginUpload(Guid id) => uploads.TryAdd(id, 0);
+    public void FinishUpload(Guid id) => uploads.TryRemove(id, out _);
+
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     public string Root { get; } = Path.GetFullPath(captureRoot);
     public string GetSessionDirectory(Guid sessionId) => Path.Combine(Root, sessionId.ToString());
@@ -12,8 +17,10 @@ public sealed class CaptureSessionStore(string captureRoot)
     {
         var session = new CaptureSession
         {
-            SessionId = Guid.NewGuid(), CreatedAt = DateTimeOffset.UtcNow,
-            Status = "pending", FrameIntervalSeconds = 1
+            SessionId = Guid.NewGuid(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            Status = "pending",
+            FrameIntervalSeconds = 1
         };
         Directory.CreateDirectory(GetSessionDirectory(session.SessionId));
         await SaveAsync(session, cancellationToken);
