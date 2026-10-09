@@ -8,4 +8,9 @@ public record CaptureSession
     public required int FrameIntervalSeconds { get; init; }
     public int FrameCount { get; init; }
     public string? Error  { get; init; }
+    public string VideoExtension { get; init; } = ".video";
+    public string ReconstructionStatus { get; init; } = "none";
+    public string? ReconstructionStage { get; init; }
+    public int ReconstructionPercent { get; init; }
+    public string? ReconstructionMessage { get; init; }
 }

@@ -67,6 +67,9 @@ public sealed class CaptureSessionStore(string captureRoot)
             var session = await TryGetAsync(id, cancellationToken);
             if (session?.Status == "processing")
                 await SaveAsync(session with { Status = "error", Error = "Processamento interrompido. Crie uma nova sessão para reenviar." }, cancellationToken);
+            else if (session?.ReconstructionStatus is "queued" or "processing")
+                await SaveAsync(session with { ReconstructionStatus = "failed", ReconstructionStage = "interrupted",
+                    ReconstructionMessage = "Reconstrução interrompida pelo reinício. Você pode tentar novamente." }, cancellationToken);
         }
     }
 }

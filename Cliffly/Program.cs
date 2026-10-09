@@ -10,11 +10,14 @@ builder.Services.AddSingleton(new CaptureSessionStore(builder.Configuration["Cap
 builder.Services.AddSingleton<FrameExtractor>();
 builder.Services.AddSingleton<ProcessingWorker>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<ProcessingWorker>());
+builder.Services.AddSingleton<IReconstructionRunner, ReconstructionRunner>();
+builder.Services.AddSingleton<ReconstructionWorker>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<ReconstructionWorker>());
 var app = builder.Build();
 if (string.IsNullOrEmpty(builder.Configuration["urls"])) app.Urls.Add("http://localhost:5000");
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/health", (IReconstructionRunner runner) => Results.Ok(new { status = "ok", reconstructionAvailable = runner.IsAvailable }));
 app.MapPost("/sessions", async (CaptureSessionStore store, CancellationToken cancellationToken) =>
 {
     var session = await store.CreateAsync(cancellationToken);
@@ -43,7 +46,9 @@ app.MapPost("/sessions/{sessionId:guid}/video", async (Guid sessionId, IFormFile
         }
         File.Move(temporary, destination);
         ownsVideo = true;
-        var processing = session with { Status = "processing", Error = null };
+        var extension = Path.GetExtension(video.FileName).ToLowerInvariant();
+        if (extension is not (".webm" or ".mp4" or ".mov" or ".mkv")) extension = ".video";
+        var processing = session with { Status = "processing", Error = null, VideoExtension = extension };
         await store.SaveAsync(processing, cancellationToken);
         if (!worker.TryEnqueue(processing))
         {
@@ -73,6 +78,36 @@ app.MapGet("/sessions/{sessionId:guid}", async (Guid sessionId, CaptureSessionSt
 {
     var session = await store.TryGetAsync(sessionId, cancellationToken);
     return session is null ? Results.NotFound() : Results.Ok(session);
+});
+app.MapPost("/sessions/{sessionId:guid}/reconstruction", async (Guid sessionId, ReconstructionWorker worker, CancellationToken cancellationToken) =>
+{
+    var result = await worker.ScheduleAsync(sessionId, cancellationToken);
+    return result switch
+    {
+        "queued" => Results.Accepted($"/sessions/{sessionId}", new { status = result }),
+        "missing" => Results.NotFound(),
+        "notready" => Results.BadRequest(new { error = "Aguarde os frames. São necessários ao menos três frames." }),
+        "conflict" => Results.Conflict(new { error = "Esta sessão já está sendo reconstruída ou tem um mundo pronto." }),
+        "unavailable" => Results.Json(new { error = "Instale o motor Python seguindo o README e reinicie o servidor." }, statusCode: 503),
+        _ => Results.Json(new { error = "Fila cheia. Tente novamente em alguns segundos." }, statusCode: 503)
+    };
+});
+app.MapGet("/sessions/{sessionId:guid}/world", async (Guid sessionId, CaptureSessionStore store, CancellationToken cancellationToken) =>
+{
+    var session = await store.TryGetAsync(sessionId, cancellationToken);
+    if (session is null) return Results.NotFound();
+    var path = Path.Combine(store.GetSessionDirectory(sessionId), "reconstruction", "world.json");
+    return session.ReconstructionStatus == "complete" && File.Exists(path)
+        ? Results.File(path, "application/json", $"cliffly-{sessionId}.json")
+        : Results.Conflict(new { error = "O mundo ainda não está pronto." });
+});
+app.MapGet("/sessions/{sessionId:guid}/video", async (Guid sessionId, CaptureSessionStore store, CancellationToken cancellationToken) =>
+{
+    var session = await store.TryGetAsync(sessionId, cancellationToken);
+    var path = Path.Combine(store.GetSessionDirectory(sessionId), "video.mp4");
+    return session is not null && session.Status == "done" && File.Exists(path)
+        ? Results.File(path, "application/octet-stream", $"cliffly-{sessionId}{session.VideoExtension}", enableRangeProcessing: true)
+        : Results.NotFound();
 });
 app.Run();
 
