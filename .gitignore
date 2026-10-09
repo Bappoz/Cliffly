@@ -17,3 +17,7 @@ test-results/
 !.env.example
 web/public/onnx/
 test-results-depth/
+
+.venv/
+__pycache__/
+.pytest_cache/
