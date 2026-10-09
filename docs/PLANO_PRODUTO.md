@@ -32,7 +32,7 @@ O protótipo anterior transformava um frame em uma superfície de cubos. Ele per
 4. #16: mundo persistente, órbita, navegação livre e exportação.
 5. #17: validação integrada com vídeo sintético, documentação e CI.
 
-Cada chunk recebe seu próprio commit com referência à issue. As issues #8–#12 seguem como evoluções: calibração, robustez, semântica, celular e exportação para o jogo.
+As issues #13–#17 foram implementadas, testadas e encerradas. Cada chunk recebeu seu próprio commit com referência à issue. As issues #8–#12 seguem como evoluções: calibração, robustez, semântica, celular e exportação para o jogo.
 
 ## Arquitetura
 

@@ -22,6 +22,14 @@ O teste estéreo separado usa baseline, focal e disparidade conhecidos e verific
 - Python: 6 testes incluindo execução explícita de SfM e estéreo reais em CPU.
 - Navegador: 19 testes aprovados; apenas a inferência de profundidade do laboratório é omitida nesta execução. Inclui teste real de vídeo/API/motor em CPU e captura/revisão/download, liberação da webcam, upload/progresso/retomada, navegação/exportação, formatos inválidos, indisponibilidade do motor e layout móvel. Fluxos simulados de API são separados do teste com vídeo/API/motor reais.
 
+## CI e revisão final
+
+[CI aprovado](https://github.com/Bappoz/Cliffly/actions/runs/37875189850) no commit `be7ba45`: formatação, 13 testes JavaScript, 16 testes C#, build/publish, testes Python e 19 testes de navegador (incluindo vídeo/API/motor reais). O teste de inferência do laboratório é separado e ficou omitido.
+
+Após os ajustes de revisão da gravação salva e alocação do visualizador, os nove testes da interface principal foram repetidos localmente: todos passaram. O exemplo foi reduzido para 4.950 blocos para facilitar a exploração em máquinas mais lentas.
+
+Um vídeo existente de cinco segundos não forneceu um par inicial válido de câmeras. O motor registrou uma falha explícita e não escreveu um mundo; esse resultado não comprova fidelidade em filmagens reais.
+
 ## Limites da evidência
 
 A cena geométrica é sintética. A webcam automatizada é a câmera simulada do Chromium. Ainda não foi avaliada a fidelidade de uma filmagem real de notebook, com calibração e medidas de referência. Não se afirma precisão métrica, classificação semântica ou reconstrução de superfícies ocultas.
