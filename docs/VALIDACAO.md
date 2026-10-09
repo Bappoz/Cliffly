@@ -19,6 +19,10 @@ Os seis testes específicos do navegador passaram, incluindo modelo crescente se
 
 API: 22 testes C# aprovados, incluindo concorrência limitada, JPEG vazio/tamanho excessivo, worker inativo, reinício e parada durante processamento. JavaScript: 14 testes. Python: 11 aprovados e um teste SfM demorado omitido nesta execução; a reconstrução completa é coberta também pelo teste integrado de vídeo.
 
+## CI
+
+[CI aprovado](https://github.com/Bappoz/Cliffly/actions/runs/37877965042) no commit `a1b62c9`: formatação, 14 testes JavaScript, 22 testes C#, build/publish, 11 testes Python e 25 testes de navegador. Os fluxos integrados usam API e motores reais tanto na captura guiada quanto no processamento do vídeo salvo. Um teste Python SfM demorado e a inferência do laboratório por frame ficaram omitidos; a reconstrução offline real é exercitada pelo teste de navegador. A execução completa local também aprovou os 25 testes de navegador.
+
 ## Limites
 
 A câmera usada é simulada; a cena é sintética. A precisão da câmera física, calibração e deriva em trajetórias longas ainda precisam ser medidas. Verde indica diversidade de observações, não precisão métrica ou conclusão de todo o ambiente. A prévia não implementa fechamento global de trajetórias ou ajuste contínuo de feixes. O motor final continua refinando a gravação.

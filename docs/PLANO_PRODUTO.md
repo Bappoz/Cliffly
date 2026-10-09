@@ -49,3 +49,5 @@ A prévia usa OpenCV (ORB, geometria epipolar, PnP e estéreo) e intrínsecos ap
 Transportar um frame por vez, sem acumular fila no navegador. Densificar apenas keyframes com deslocamento útil. Manter o vídeo completo independente da prévia e liberar o worker ao terminar ou após inatividade. Medir latência antes de prometer taxas de atualização.
 
 Chunks: #18 motor incremental; #19 cobertura/orientação; #20 API/lifecycle; #21 experiência guiada; #22 testes integrados e documentação.
+
+As issues #18–#22 foram implementadas em commits separados e validadas pelo [CI](https://github.com/Bappoz/Cliffly/actions/runs/37877965042), incluindo a gravação com câmera simulada alimentando o motor incremental real. A prévia está disponível durante a gravação, com cores observadas, cobertura, pose e orientação de captura. A validação com câmera física permanece na evolução de calibração e fidelidade (#8).
