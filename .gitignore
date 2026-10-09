@@ -1,0 +1,17 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+captures/
+node_modules/
+wwwroot/
+dist/
+playwright-report/
+test-results/
+.idea/
+.junie/
+.claude/
+.env
+.env.*
+!.env.example
