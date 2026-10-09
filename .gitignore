@@ -15,3 +15,4 @@ test-results/
 .env
 .env.*
 !.env.example
+web/public/onnx/
