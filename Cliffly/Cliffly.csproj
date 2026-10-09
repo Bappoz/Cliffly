@@ -4,6 +4,8 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <!-- Large ONNX binaries are served locally; avoid redundant publish compression. -->
+        <CompressionExcludePatterns>$(CompressionExcludePatterns);**/*.wasm</CompressionExcludePatterns>
     </PropertyGroup>
 
     <ItemGroup>
