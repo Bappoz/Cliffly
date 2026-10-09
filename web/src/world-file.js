@@ -41,6 +41,13 @@ export function validateWorld(value) {
         !vector.every((x) => Number.isFinite(x) && Math.abs(x) < 100000)
       )
         throw new Error("Posição de câmera inválida.");
+  if (
+    value.confidence !== undefined &&
+    (!Array.isArray(value.confidence) ||
+      value.confidence.length !== points.length / 7 ||
+      !value.confidence.every((x) => Number.isFinite(x) && x >= 0 && x <= 1))
+  )
+    throw new Error("Cobertura do mundo inválida.");
   return value;
 }
 

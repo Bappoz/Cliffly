@@ -21,8 +21,8 @@
           <h1>Filme um lugar.<br />Explore seus <em>blocos.</em></h1>
         </div>
         <p class="intro-copy">
-          Grave, salve e deixe o Cliffly reconstruir as vistas em um mundo 3D.
-          Depois, entre e explore o que sua câmera conseguiu observar.
+          Acompanhe o mundo crescendo enquanto grava. Veja onde faltam novas
+          perspectivas e refine a reconstrução ao terminar.
         </p>
       </section>
       <ol class="steps">
@@ -47,11 +47,12 @@
               <span class="camera-icon">◉</span
               ><strong>Comece pelo seu ambiente</strong>
               <p>
-                Uma volta lenta, várias vistas.<br />A reconstrução acontece
-                depois.
+                Uma volta lenta, várias vistas.<br />A prévia orienta sua
+                captura.
               </p>
             </div>
             <span id="record-clock" hidden>● 00:00</span>
+            <div id="guide-target" hidden aria-hidden="true"></div>
           </div>
           <div class="capture-actions">
             <button id="record" class="primary">● Gravar com webcam</button
@@ -60,6 +61,22 @@
             ><label class="button secondary" for="video-file"
               >↑ Importar vídeo</label
             ><input id="video-file" type="file" accept="video/*" hidden />
+          </div>
+          <label class="guided-option"
+            ><input id="guided-enabled" type="checkbox" checked /> Prévia 3D
+            durante a gravação</label
+          >
+          <div id="guide-panel" class="guide-panel" hidden>
+            <div>
+              <strong>Captura guiada</strong
+              ><span id="guide-state">INICIANDO</span>
+            </div>
+            <p id="guide-message" role="status" aria-live="polite">
+              Preparando a prévia aproximada…
+            </p>
+            <small id="guide-stats"
+              >Espaços vazios ainda são desconhecidos.</small
+            >
           </div>
           <p id="video-info" class="muted">
             Até 2 minutos · 128 MiB · sem áudio
@@ -112,8 +129,8 @@
               <div class="cube">◇</div>
               <h3>A sua próxima perspectiva.</h3>
               <p>
-                O mundo aparece quando a análise termina.<br />Cada bloco ocupa
-                uma posição reconstruída.
+                A prévia cresce durante a captura.<br />Depois, refine o mundo
+                com a gravação completa.
               </p>
               <button id="example" class="example-button">
                 Explorar exemplo reconstruído ↗
@@ -140,6 +157,9 @@
             <label class="path-toggle"
               ><input id="path" type="checkbox" disabled /> Trajeto</label
             >
+            <label class="path-toggle"
+              ><input id="coverage" type="checkbox" disabled /> Cobertura</label
+            >
             <div class="world-files">
               <button id="export-world" disabled>↓ Mundo</button
               ><button id="export-ply" disabled>↓ Pontos</button
@@ -157,6 +177,11 @@
           </p>
           <div id="world-details" class="world-details" hidden>
             <div id="metrics"></div>
+            <div id="coverage-legend" class="coverage-legend" hidden>
+              <span><i class="good"></i> Várias vistas e ângulos</span
+              ><span><i class="weak"></i> Precisa de outras vistas</span
+              ><span>Vazio = desconhecido</span>
+            </div>
             <p id="world-warning"></p>
           </div>
         </section>
@@ -194,6 +219,14 @@
           análise.
         </li>
       </ol>
+      <p>
+        Com a prévia ativada, as regiões amarelas precisam de outras vistas; as
+        verdes foram observadas de vários ângulos. A seta no mapa indica a
+        posição estimada da câmera. Espaços vazios são desconhecidos. Se o
+        rastreamento se perder, volte lentamente a uma região já vista. A prévia
+        é experimental e pode ter erro ou atraso. Ao terminar, refine o mundo
+        com a análise da gravação completa.
+      </p>
       <p>
         O processamento pode levar minutos. Paredes lisas, espelhos, superfícies
         transparentes e objetos em movimento podem deixar buracos ou impedir a

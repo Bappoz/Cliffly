@@ -1,4 +1,82 @@
 @import url("./base.css");
+.guided-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 15px 0 6px;
+  font-size: 11px;
+  color: #5c7953;
+}
+.guided-option input {
+  accent-color: #386e48;
+}
+.guide-panel {
+  padding: 12px;
+  border-radius: 8px;
+  background: #e8ecdb;
+  margin-top: 12px;
+}
+.guide-panel > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+#guide-state {
+  font: 8px monospace;
+  color: #896f31;
+}
+#guide-state[data-tracking="tracking"] {
+  color: #467d4c;
+}
+#guide-state[data-tracking="lost"],
+#guide-state[data-tracking="error"] {
+  color: #a2523b;
+}
+.guide-panel p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #5f7651;
+}
+.guide-panel small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.6;
+  color: #7c8b6b;
+}
+#guide-target {
+  position: absolute;
+  border: 2px dashed #edbd54;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #17312155;
+  pointer-events: none;
+}
+.coverage-legend {
+  display: flex;
+  gap: 13px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: #6d805e;
+}
+.coverage-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.coverage-legend i {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  border-radius: 2px;
+}
+.coverage-legend .good {
+  background: #75c88a;
+}
+.coverage-legend .weak {
+  background: #edbd54;
+}
 :root {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   color: #253b31;

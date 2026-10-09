@@ -42,3 +42,22 @@ test("enforces block budget", () => {
   w.points = new Array((MAX_WORLD_BLOCKS + 1) * 7).fill(0);
   assert.throws(() => validateWorld(w), /120 mil/);
 });
+test("preview coverage has one finite value per reconstructed voxel", () => {
+  assert.equal(
+    validateWorld({ ...world(), preview: true, confidence: [0.4] })
+      .confidence[0],
+    0.4,
+  );
+  assert.throws(
+    () => validateWorld({ ...world(), confidence: [] }),
+    /Cobertura/,
+  );
+  assert.throws(
+    () => validateWorld({ ...world(), confidence: [2] }),
+    /Cobertura/,
+  );
+  assert.throws(
+    () => validateWorld({ ...world(), confidence: [NaN] }),
+    /Cobertura/,
+  );
+});

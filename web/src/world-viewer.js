@@ -92,7 +92,8 @@ export class WorldViewer {
     this.resize();
     this.last = performance.now();
   }
-  setWorld(world) {
+  setWorld(world, { preserveView = false } = {}) {
+    const hadWorld = Boolean(this.world);
     const count = world.points.length / 7;
     if (count > MAX_WORLD_BLOCKS)
       throw new Error("O mundo excede o limite de blocos.");
@@ -126,6 +127,9 @@ export class WorldViewer {
     }
     this.mesh.instanceMatrix.needsUpdate = true;
     this.mesh.instanceColor.needsUpdate = true;
+    if (world.preview)
+      for (const pose of world.cameras)
+        box.expandByPoint(new THREE.Vector3(...pose.position));
     this.center = box.getCenter(new THREE.Vector3());
     this.radius = Math.max(1, box.getSize(new THREE.Vector3()).length() / 2);
     this.speed = this.radius / 5;
@@ -141,8 +145,75 @@ export class WorldViewer {
     );
     this.scene.add(this.path);
     this.path.visible = false;
+    this.applyColors();
+    if (!preserveView || !hadWorld) {
+      this.setMode("orbit");
+      this.reset();
+    }
+  }
+  setCoverage(enabled) {
+    this.coverageEnabled = enabled;
+    this.applyColors();
+  }
+  applyColors() {
+    if (!this.world) return;
+    const color = new THREE.Color();
+    for (let i = 0; i < this.mesh.count; i++) {
+      if (this.coverageEnabled && this.world.confidence) {
+        color.set(this.world.confidence[i] >= 1 ? "#75c88a" : "#edbd54");
+      } else {
+        const p = i * 7;
+        color.setRGB(
+          this.world.points[p + 4] / 255,
+          this.world.points[p + 5] / 255,
+          this.world.points[p + 6] / 255,
+          THREE.SRGBColorSpace,
+        );
+      }
+      this.mesh.setColorAt(i, color);
+    }
+    this.mesh.instanceColor.needsUpdate = true;
+  }
+  clearWorld() {
+    this.world = null;
+    this.mesh.count = 0;
+    if (this.path) this.path.visible = false;
+    if (this.cameraMarker) this.cameraMarker.visible = false;
     this.setMode("orbit");
-    this.reset();
+  }
+  showGuideCamera(pose, lost = false) {
+    if (!pose) {
+      if (this.cameraMarker) this.cameraMarker.visible = false;
+      return;
+    }
+    if (
+      ![pose.position, pose.target].every(
+        (v) => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite),
+      )
+    )
+      return;
+    const position = new THREE.Vector3(...pose.position);
+    const direction = new THREE.Vector3(...pose.target)
+      .sub(position)
+      .normalize();
+    if (!this.cameraMarker) {
+      this.cameraMarker = new THREE.ArrowHelper(
+        direction,
+        position,
+        2,
+        0xf0d794,
+        0.5,
+        0.3,
+      );
+      this.scene.add(this.cameraMarker);
+      this.cameraMarker.line.material.depthTest = false;
+      this.cameraMarker.cone.material.depthTest = false;
+      this.cameraMarker.renderOrder = 1000;
+    }
+    this.cameraMarker.visible = true;
+    this.cameraMarker.position.copy(position);
+    this.cameraMarker.setDirection(direction);
+    this.cameraMarker.setColor(lost ? 0xe67e63 : 0xf0d794);
   }
   setMode(mode) {
     this.walk.unlock();
@@ -221,6 +292,10 @@ export class WorldViewer {
     this.material.dispose();
     this.path?.geometry.dispose();
     this.path?.material.dispose();
+    this.cameraMarker?.line.geometry.dispose();
+    this.cameraMarker?.line.material.dispose();
+    this.cameraMarker?.cone.geometry.dispose();
+    this.cameraMarker?.cone.material.dispose();
     this.renderer.dispose();
   }
 }

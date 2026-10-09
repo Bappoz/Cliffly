@@ -1,6 +1,7 @@
 import "./capture.css";
 import { WorldViewer } from "./world-viewer.js";
 import { validateWorld, worldPly } from "./world-file.js";
+import { GuidedCapture } from "./guided-capture.js";
 
 const $ = (id) => document.getElementById(id);
 const LIMIT = 128 * 1024 * 1024;
@@ -16,6 +17,99 @@ let stream,
   recording = false,
   generation = 0;
 let viewer;
+let guidePhase = "idle",
+  guideRegion = null;
+const guide = new GuidedCapture({
+  started: () => {
+    guidePhase = "active";
+    world = null;
+    viewer?.clearWorld();
+    $("world-empty").hidden = false;
+    $("world-title").textContent = "Prévia · aguardando novas vistas";
+    $("world-count").textContent = "0 BLOCOS";
+    $("world-details").hidden = true;
+    for (const id of [
+      "orbit",
+      "free",
+      "reset",
+      "path",
+      "coverage",
+      "export-world",
+      "export-ply",
+    ])
+      $(id).disabled = true;
+    $("guide-panel").hidden = false;
+    $("guide-state").textContent = "INICIANDO";
+    $("guide-message").textContent =
+      "Desloque a câmera devagar para obter as primeiras vistas.";
+    $("coverage").checked = true;
+  },
+  state: (state) => {
+    const labels = {
+      initializing: "NOVAS VISTAS",
+      tracking: "ACOMPANHANDO",
+      lost: "VOLTE À REGIÃO VISTA",
+      blur: "ESTABILIZE",
+      low_texture: "BUSQUE DETALHES",
+    };
+    $("guide-state").textContent = labels[state.tracking] || "ACOMPANHANDO";
+    $("guide-state").dataset.tracking = state.tracking;
+    $("guide-message").textContent = state.message;
+    $("guide-stats").textContent =
+      `${state.keyframes} vistas úteis · ${state.blocks.toLocaleString("pt-BR")} blocos · ${state.milliseconds} ms nesta amostra`;
+    viewer?.showGuideCamera(state.camera, state.tracking !== "tracking");
+    guideRegion = state.tracking === "tracking" ? state.targetRegion : null;
+    positionGuideRegion();
+  },
+  world: (value) => {
+    displayWorld(value, "Prévia · escaneando o ambiente", {
+      preserveView: true,
+    });
+    viewer?.showGuideCamera(value.cameras.at(-1));
+  },
+  error: (message) => {
+    guidePhase = "error";
+    $("guide-panel").hidden = false;
+    $("guide-state").textContent = "SEM PRÉVIA";
+    $("guide-state").dataset.tracking = "error";
+    $("guide-message").textContent =
+      `${message} O vídeo continua sendo gravado.`;
+    guideRegion = null;
+    positionGuideRegion();
+  },
+  stopped: () => {
+    if (guidePhase === "active") {
+      $("guide-state").textContent = "ENCERRADA";
+      $("guide-message").textContent = world?.preview
+        ? "Prévia preservada. Agora refine o mundo usando a gravação completa."
+        : "Finalize a análise do vídeo para tentar reconstruir o ambiente.";
+      guidePhase = "stopped";
+    }
+    guideRegion = null;
+    positionGuideRegion();
+  },
+});
+
+function positionGuideRegion() {
+  const target = $("guide-target"),
+    video = $("capture-video");
+  target.hidden = !guideRegion || !recording;
+  if (target.hidden) return;
+  const parent = video.parentElement;
+  const ratio = video.videoWidth / video.videoHeight;
+  const w = Math.min(parent.clientWidth, parent.clientHeight * ratio),
+    h = w / ratio;
+  const [x, y, width, height] = guideRegion;
+  Object.assign(target.style, {
+    left: `${(parent.clientWidth - w) / 2 + x * w}px`,
+    top: `${(parent.clientHeight - h) / 2 + y * h}px`,
+    width: `${width * w}px`,
+    height: `${height * h}px`,
+  });
+}
+new ResizeObserver(positionGuideRegion).observe(
+  $("capture-video").parentElement,
+);
 try {
   viewer = new WorldViewer($("world-canvas"), (mode) => {
     $("orbit").classList.toggle("active", mode === "orbit");
@@ -47,6 +141,7 @@ function controls() {
   $("stop").hidden = !recording;
   $("video-file").disabled = busy || recording;
   $("world-file").disabled = busy || recording;
+  $("guided-enabled").disabled = busy || recording;
   $("generate").disabled = busy || recording || (!localVideo && !sessionId);
   $("save-video").disabled = (!localVideo && !sessionId) || recording;
   $("example").disabled = busy || recording;
@@ -86,7 +181,9 @@ function setVideo(blob) {
   $("record-clock").hidden = true;
   $("video-info").textContent =
     `${(blob.size / 1024 / 1024).toFixed(1)} MiB · gravação pronta para revisar`;
-  $("generate").innerHTML = "Salvar e gerar mundo <span>→</span>";
+  $("generate").innerHTML = world?.preview
+    ? "Refinar e gerar mundo <span>→</span>"
+    : "Salvar e gerar mundo <span>→</span>";
   clearSession();
   controls();
   status("Gravação pronta. Reveja, baixe se quiser e inicie a reconstrução.");
@@ -127,6 +224,7 @@ $("record").addEventListener("click", async () => {
     };
     recorder.onstop = () => {
       clearInterval(clock);
+      guide.stop();
       releaseCamera();
       recording = false;
       try {
@@ -138,6 +236,7 @@ $("record").addEventListener("click", async () => {
       chunks = [];
     };
     recorder.onerror = () => {
+      guide.stop();
       releaseCamera();
       clearInterval(clock);
       recording = false;
@@ -154,6 +253,8 @@ $("record").addEventListener("click", async () => {
     clearSession();
     recording = true;
     recorder.start(1000);
+    if ($("guided-enabled").checked) guide.start($("capture-video"));
+    else $("guide-panel").hidden = true;
     const start = performance.now();
     clock = setInterval(() => {
       const seconds = Math.floor((performance.now() - start) / 1000);
@@ -381,13 +482,14 @@ async function processCapture(existingId, retry = false) {
 }
 $("generate").addEventListener("click", () => processCapture(undefined, true));
 
-function displayWorld(value, title) {
+function displayWorld(value, title, { preserveView = false } = {}) {
   world = validateWorld(value);
   if (!viewer)
     throw new Error(
       "O arquivo está pronto, mas este navegador não conseguiu iniciar o 3D.",
     );
-  viewer.setWorld(world);
+  viewer.setWorld(world, { preserveView });
+  if (!world.preview) viewer.showGuideCamera(null);
   $("world-empty").hidden = true;
   $("world-title").textContent = title;
   $("world-count").textContent =
@@ -401,7 +503,12 @@ function displayWorld(value, title) {
     "export-ply",
   ])
     $(id).disabled = false;
-  $("path").checked = false;
+  if (!preserveView) $("path").checked = false;
+  viewer.path.visible = $("path").checked;
+  $("coverage").disabled = !world.confidence;
+  if (!world.confidence) $("coverage").checked = false;
+  viewer.setCoverage($("coverage").checked);
+  $("coverage-legend").hidden = !world.confidence || !$("coverage").checked;
   $("world-details").hidden = false;
   $("metrics").replaceChildren();
   const metrics = world.metrics || {};
@@ -409,6 +516,11 @@ function displayWorld(value, title) {
     `${metrics.registeredFrames ?? world.cameras.length} vistas registradas`,
     `${(world.points.length / 7).toLocaleString("pt-BR")} blocos`,
     "Escala relativa",
+    ...(world.confidence
+      ? [
+          `${world.confidence.filter((c) => c >= 1).length.toLocaleString("pt-BR")} blocos com várias vistas`,
+        ]
+      : []),
   ]) {
     const item = document.createElement("span");
     item.textContent = text;
@@ -462,6 +574,10 @@ $("reset").onclick = () => viewer?.reset();
 $("path").onchange = () => {
   if (viewer?.path) viewer.path.visible = $("path").checked;
 };
+$("coverage").onchange = () => {
+  viewer?.setCoverage($("coverage").checked);
+  $("coverage-legend").hidden = !$("coverage").checked;
+};
 $("export-world").onclick = () => {
   if (world)
     download(
@@ -479,6 +595,7 @@ $("export-ply").onclick = () => {
 $("help-open").onclick = () => $("help").showModal();
 $("help-close").onclick = () => $("help").close();
 window.addEventListener("pagehide", () => {
+  guide.stop({ beacon: true });
   ++generation;
   clearInterval(clock);
   releaseCamera();
