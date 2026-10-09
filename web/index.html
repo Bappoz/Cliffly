@@ -1,53 +1,280 @@
 <!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f5f4ee">
-  <meta name="description" content="Transforme sua webcam em uma cena de blocos coloridos. Capture, explore e leve seu mundo com você.">
-  <title>Cliffly — seu mundo em blocos</title>
-</head>
-<body>
-  <a class="skip" href="#workspace">Ir para o Studio</a>
-  <header class="topbar">
-    <a class="brand" href="/" aria-label="Cliffly, início"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>cliffly<span class="brand-tag">STUDIO / 01</span></a>
-    <button id="help-open" class="text-button">Como funciona <span aria-hidden="true">↗</span></button>
-  </header>
-  <main>
-    <section class="intro" aria-labelledby="intro-title">
-      <div><p class="eyebrow"><span class="small-square"></span> UMA NOVA PERSPECTIVA</p><h1 id="intro-title">Seu mundo.<br><span>Em outros blocos.</span></h1></div>
-      <div class="intro-right"><p>A mesma cena, um novo jeito de explorar.<br>Abra sua câmera e veja o cotidiano ganhar blocos.</p><div class="actions"><button id="camera-start" class="button primary"><span aria-hidden="true">◉</span> Usar webcam</button><button id="demo-start" class="button secondary">Experimentar demo <span aria-hidden="true">↗</span></button></div><p class="privacy">Processamento local · câmera só com sua permissão</p></div>
-    </section>
-    <section id="workspace" class="workspace" aria-label="Studio de captura">
-      <div class="workspace-heading"><div class="studio-label"><span class="small-square"></span> SEU STUDIO</div><div class="source-badge" id="source-badge">DEMONSTRAÇÃO</div></div>
-      <div class="viewers">
-        <article class="source-panel">
-          <div class="panel-heading"><h2><span class="panel-number">01</span> A cena original</h2><span id="source-label">Ambiente de exemplo</span></div>
-          <div class="source-surface"><canvas id="source-preview" aria-label="Prévia da câmera ou demonstração"></canvas><span class="source-corner" id="source-corner">SEM CÂMERA ATIVA</span></div>
-          <div class="source-footer"><label for="camera-select">Fonte</label><select id="camera-select" aria-label="Selecionar webcam"><option value="">Webcam padrão</option></select><button id="camera-stop" class="text-button" disabled>Desligar</button></div>
-        </article>
-        <article class="world-panel">
-          <div class="panel-heading"><h2><span class="panel-number">02</span> Seu mundo em blocos</h2><span id="mode-label">PROFUNDIDADE SINTÉTICA · DEMO</span></div>
-          <div class="world-surface" id="world-surface"><canvas id="world" tabindex="0" aria-label="Cena em blocos. Arraste para girar, role para aproximar; setas giram e Home restaura a vista."></canvas><div class="world-overlay"><span class="live-badge" id="live-badge"><i></i> AO VIVO</span><button id="reset-view" class="overlay-button">↺ Vista original</button></div><div class="world-bottom"><span id="interaction-hint">Arraste para explorar · role para aproximar</span><span id="block-counter">0 BLOCOS</span></div><div id="webgl-error" class="render-error" hidden>Seu navegador não conseguiu iniciar o WebGL. Ative a aceleração de hardware ou tente outro navegador.</div></div>
-          <div class="world-footer"><span><strong id="fps">—</strong> <span id="fps-label">quadros/s</span></span><span id="depth-timing">Imagem local · sem upload</span><button id="freeze" class="button small">Ⅱ Congelar cena</button></div>
-        </article>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f4ee" />
+    <meta
+      name="description"
+      content="Transforme sua webcam em uma cena de blocos coloridos. Capture, explore e leve seu mundo com você."
+    />
+    <title>Cliffly — seu mundo em blocos</title>
+  </head>
+  <body>
+    <a class="skip" href="#workspace">Ir para o Studio</a>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Cliffly, início"
+        ><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span
+        >cliffly<span class="brand-tag">STUDIO / 01</span></a
+      >
+      <button id="help-open" class="text-button">
+        Como funciona <span aria-hidden="true">↗</span>
+      </button>
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="intro-title">
+        <div>
+          <p class="eyebrow">
+            <span class="small-square"></span> UMA NOVA PERSPECTIVA
+          </p>
+          <h1 id="intro-title">
+            Seu mundo.<br /><span>Em outros blocos.</span>
+          </h1>
+        </div>
+        <div class="intro-right">
+          <p>
+            A mesma cena, um novo jeito de explorar.<br />Abra sua câmera e veja
+            o cotidiano ganhar blocos.
+          </p>
+          <div class="actions">
+            <button id="camera-start" class="button primary">
+              <span aria-hidden="true">◉</span> Usar webcam</button
+            ><button id="demo-start" class="button secondary">
+              Experimentar demo <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <p class="privacy">
+            Processamento local · câmera só com sua permissão
+          </p>
+        </div>
+      </section>
+      <section id="workspace" class="workspace" aria-label="Studio de captura">
+        <div class="workspace-heading">
+          <div class="studio-label">
+            <span class="small-square"></span> SEU STUDIO
+          </div>
+          <div class="source-badge" id="source-badge">DEMONSTRAÇÃO</div>
+        </div>
+        <div class="viewers">
+          <article class="source-panel">
+            <div class="panel-heading">
+              <h2><span class="panel-number">01</span> A cena original</h2>
+              <span id="source-label">Ambiente de exemplo</span>
+            </div>
+            <div class="source-surface">
+              <canvas
+                id="source-preview"
+                aria-label="Prévia da câmera ou demonstração"
+              ></canvas
+              ><span class="source-corner" id="source-corner"
+                >SEM CÂMERA ATIVA</span
+              >
+            </div>
+            <div class="source-footer">
+              <label for="camera-select">Fonte</label
+              ><select id="camera-select" aria-label="Selecionar webcam">
+                <option value="">Webcam padrão</option></select
+              ><button id="camera-stop" class="text-button" disabled>
+                Desligar
+              </button>
+            </div>
+          </article>
+          <article class="world-panel">
+            <div class="panel-heading">
+              <h2><span class="panel-number">02</span> Seu mundo em blocos</h2>
+              <span id="mode-label">PROFUNDIDADE SINTÉTICA · DEMO</span>
+            </div>
+            <div class="world-surface" id="world-surface">
+              <canvas
+                id="world"
+                tabindex="0"
+                aria-label="Cena em blocos. Arraste para girar, role para aproximar; setas giram e Home restaura a vista."
+              ></canvas>
+              <div class="world-overlay">
+                <span class="live-badge" id="live-badge"><i></i> AO VIVO</span
+                ><button id="reset-view" class="overlay-button">
+                  ↺ Vista original
+                </button>
+              </div>
+              <div class="world-bottom">
+                <span id="interaction-hint"
+                  >Arraste para explorar · role para aproximar</span
+                ><span id="block-counter">0 BLOCOS</span>
+              </div>
+              <div id="webgl-error" class="render-error" hidden>
+                Seu navegador não conseguiu iniciar o WebGL. Ative a aceleração
+                de hardware ou tente outro navegador.
+              </div>
+            </div>
+            <div class="world-footer">
+              <span
+                ><strong id="fps">—</strong>
+                <span id="fps-label">quadros/s</span></span
+              ><span id="depth-timing">Imagem local · sem upload</span
+              ><button id="freeze" class="button small">Ⅱ Congelar cena</button>
+            </div>
+          </article>
+        </div>
+        <div class="control-deck">
+          <div class="control-group">
+            <label for="quality">Detalhe dos blocos</label
+            ><select id="quality">
+              <option value="48">Leve · 48 colunas</option>
+              <option value="80" selected>Equilibrado · 80 colunas</option>
+              <option value="128">Detalhado · 128 colunas</option></select
+            ><span>Mais detalhe, mais processamento</span>
+          </div>
+          <div class="control-group">
+            <label for="palette">Cores da cena</label
+            ><select id="palette">
+              <option value="original">Cores originais</option>
+              <option value="blocks">Paleta de blocos</option></select
+            ><span>A paleta é uma escolha artística</span>
+          </div>
+          <div class="control-group">
+            <label for="depth-strength"
+              >Intensidade de profundidade
+              <output id="depth-value">1.0</output></label
+            ><input
+              id="depth-strength"
+              type="range"
+              min="0"
+              max="2"
+              step="0.1"
+              value="1"
+            /><span>Aplicada na demo ou com IA</span>
+          </div>
+          <div class="control-group">
+            <label for="smoothing"
+              >Estabilidade <output id="smoothing-value">30%</output></label
+            ><input
+              id="smoothing"
+              type="range"
+              min="0"
+              max="0.9"
+              step="0.1"
+              value="0.3"
+            /><span>Suaviza pequenas variações</span>
+          </div>
+        </div>
+        <div class="tools-deck">
+          <div class="tool-actions">
+            <button id="depth-enable" class="button secondary small">
+              ◇ Ativar profundidade IA</button
+            ><label class="checkbox"
+              ><input id="mirror" type="checkbox" /> Espelhar</label
+            ><label class="checkbox"
+              ><input id="compare" type="checkbox" /> Comparar cores</label
+            >
+          </div>
+          <div class="tool-actions">
+            <button id="video-open" class="text-button">Abrir vídeo</button
+            ><button id="scene-open" class="text-button">Abrir cena</button
+            ><button
+              id="export-open"
+              aria-label="Exportar"
+              class="button secondary small"
+            >
+              ↓ Exportar
+            </button>
+          </div>
+        </div>
+        <p id="status" class="status" role="status" aria-live="polite">
+          Demo pronta. Experimente girar a cena ou conecte sua webcam.
+        </p>
+        <p class="accuracy" id="accuracy">
+          A demo usa um ambiente desenhado e profundidade sintética. Sua câmera
+          ainda está desligada.
+        </p>
+      </section>
+      <section class="notes" aria-label="Dicas de uso">
+        <div>
+          <span>01 / CAPTURE</span>
+          <p>Luz boa faz a diferença.<br />Comece com a câmera parada.</p>
+        </div>
+        <div>
+          <span>02 / EXPLORE</span>
+          <p>Congele um instante.<br />Veja a cena por outro ângulo.</p>
+        </div>
+        <div>
+          <span>03 / GUARDE</span>
+          <p>Exporte seus blocos.<br />Reabra a cena quando quiser.</p>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <span>CLIFFLY · FEITO DE PERSPECTIVAS</span
+      ><a
+        href="https://github.com/Bappoz/Cliffly"
+        target="_blank"
+        rel="noreferrer"
+        >Código aberto ↗</a
+      >
+    </footer>
+    <video id="source-video" playsinline muted hidden></video>
+    <input id="video-file" type="file" accept="video/*" hidden /><input
+      id="scene-file"
+      type="file"
+      accept=".json,application/json"
+      hidden
+    />
+    <dialog id="help">
+      <div class="dialog-heading">
+        <h2>Um outro jeito de ver.</h2>
+        <button class="text-button" data-close="help" aria-label="Fechar ajuda">
+          ✕
+        </button>
       </div>
-      <div class="control-deck">
-        <div class="control-group"><label for="quality">Detalhe dos blocos</label><select id="quality"><option value="48">Leve · 48 colunas</option><option value="80" selected>Equilibrado · 80 colunas</option><option value="128">Detalhado · 128 colunas</option></select><span>Mais detalhe, mais processamento</span></div>
-        <div class="control-group"><label for="palette">Cores da cena</label><select id="palette"><option value="original">Cores originais</option><option value="blocks">Paleta de blocos</option></select><span>A paleta é uma escolha artística</span></div>
-        <div class="control-group"><label for="depth-strength">Intensidade de profundidade <output id="depth-value">1.0</output></label><input id="depth-strength" type="range" min="0" max="2" step="0.1" value="1"><span>Aplicada na demo ou com IA</span></div>
-        <div class="control-group"><label for="smoothing">Estabilidade <output id="smoothing-value">30%</output></label><input id="smoothing" type="range" min="0" max="0.9" step="0.1" value="0.3"><span>Suaviza pequenas variações</span></div>
+      <p>
+        A webcam vira uma superfície de cubos com as cores e posições da imagem.
+        No modo básico, essa superfície é plana.
+      </p>
+      <p>
+        <strong>Profundidade IA</strong> baixa um modelo na primeira ativação e
+        estima distância relativa no seu navegador. A velocidade depende do
+        notebook. Não mede metros, não revela objetos escondidos e ainda não
+        reconstrói o cômodo inteiro.
+      </p>
+      <p>
+        Congele para explorar sem mudanças. Arraste para girar, role para
+        aproximar. No canvas, use setas, +/− e Home. <kbd>Espaço</kbd> congela
+        quando você não está num controle.
+      </p>
+      <p>
+        JSON guarda os blocos para reabrir no Cliffly. PLY exporta uma nuvem
+        colorida para ferramentas 3D. PNG salva a vista atual. Ainda não é um
+        arquivo de mundo Minecraft.
+      </p>
+      <p>
+        A câmera não é enviada ao backend. Internet é necessária para baixar o
+        modelo de IA; depois o navegador pode usar seu cache.
+      </p>
+      <button class="button primary" data-close="help">
+        Vamos experimentar
+      </button>
+    </dialog>
+    <dialog id="export">
+      <div class="dialog-heading">
+        <h2>Leve esse instante.</h2>
+        <button
+          class="text-button"
+          data-close="export"
+          aria-label="Fechar exportação"
+        >
+          ✕
+        </button>
       </div>
-      <div class="tools-deck"><div class="tool-actions"><button id="depth-enable" class="button secondary small">◇ Ativar profundidade IA</button><label class="checkbox"><input id="mirror" type="checkbox"> Espelhar</label><label class="checkbox"><input id="compare" type="checkbox"> Comparar cores</label></div><div class="tool-actions"><button id="video-open" class="text-button">Abrir vídeo</button><button id="scene-open" class="text-button">Abrir cena</button><button id="export-open" class="button secondary small">↓ Exportar</button></div></div>
-      <p id="status" class="status" role="status" aria-live="polite">Demo pronta. Experimente girar a cena ou conecte sua webcam.</p>
-      <p class="accuracy" id="accuracy">A demo usa um ambiente desenhado e profundidade sintética. Sua câmera ainda está desligada.</p>
-    </section>
-    <section class="notes" aria-label="Dicas de uso"><div><span>01 / CAPTURE</span><p>Luz boa faz a diferença.<br>Comece com a câmera parada.</p></div><div><span>02 / EXPLORE</span><p>Congele um instante.<br>Veja a cena por outro ângulo.</p></div><div><span>03 / GUARDE</span><p>Exporte seus blocos.<br>Reabra a cena quando quiser.</p></div></section>
-  </main>
-  <footer><span>CLIFFLY · FEITO DE PERSPECTIVAS</span><a href="https://github.com/Bappoz/Cliffly" target="_blank" rel="noreferrer">Código aberto ↗</a></footer>
-  <video id="source-video" playsinline muted hidden></video>
-  <input id="video-file" type="file" accept="video/*" hidden><input id="scene-file" type="file" accept=".json,application/json" hidden>
-  <dialog id="help"><div class="dialog-heading"><h2>Um outro jeito de ver.</h2><button class="text-button" data-close="help" aria-label="Fechar ajuda">✕</button></div><p>A webcam vira uma superfície de cubos com as cores e posições da imagem. No modo básico, essa superfície é plana.</p><p><strong>Profundidade IA</strong> baixa um modelo na primeira ativação e estima distância relativa no seu navegador. A velocidade depende do notebook. Não mede metros, não revela objetos escondidos e ainda não reconstrói o cômodo inteiro.</p><p>Congele para explorar sem mudanças. Arraste para girar, role para aproximar. No canvas, use setas, +/− e Home. <kbd>Espaço</kbd> congela quando você não está num controle.</p><p>JSON guarda os blocos para reabrir no Cliffly. PLY exporta uma nuvem colorida para ferramentas 3D. PNG salva a vista atual. Ainda não é um arquivo de mundo Minecraft.</p><p>A câmera não é enviada ao backend. Internet é necessária para baixar o modelo de IA; depois o navegador pode usar seu cache.</p><button class="button primary" data-close="help">Vamos experimentar</button></dialog>
-  <dialog id="export"><div class="dialog-heading"><h2>Leve esse instante.</h2><button class="text-button" data-close="export" aria-label="Fechar exportação">✕</button></div><p>Salve a cena atual no formato que combina com o próximo passo.</p><div class="export-options"><button id="export-json" class="button secondary">JSON <small>Reabrir no Cliffly</small></button><button id="export-ply" class="button secondary">PLY <small>Nuvem de pontos 3D</small></button><button id="export-png" class="button secondary">PNG <small>Imagem da vista atual</small></button></div></dialog>
-  <script type="module" src="/src/main.js"></script>
-</body>
+      <p>Salve a cena atual no formato que combina com o próximo passo.</p>
+      <div class="export-options">
+        <button id="export-json" class="button secondary">
+          JSON <small>Reabrir no Cliffly</small></button
+        ><button id="export-ply" class="button secondary">
+          PLY <small>Nuvem de pontos 3D</small></button
+        ><button id="export-png" class="button secondary">
+          PNG <small>Imagem da vista atual</small>
+        </button>
+      </div>
+    </dialog>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
