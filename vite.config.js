@@ -16,6 +16,7 @@ export default defineConfig({
     proxy: {
       "/health": "http://localhost:5000",
       "/sessions": "http://localhost:5000",
+      "/scans": "http://localhost:5000",
     },
   },
 });

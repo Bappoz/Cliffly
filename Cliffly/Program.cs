@@ -13,11 +13,62 @@ builder.Services.AddHostedService(provider => provider.GetRequiredService<Proces
 builder.Services.AddSingleton<IReconstructionRunner, ReconstructionRunner>();
 builder.Services.AddSingleton<ReconstructionWorker>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<ReconstructionWorker>());
+builder.Services.AddSingleton<GuidedScanManager>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<GuidedScanManager>());
 var app = builder.Build();
 if (string.IsNullOrEmpty(builder.Configuration["urls"])) app.Urls.Add("http://localhost:5000");
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.MapGet("/health", (IReconstructionRunner runner) => Results.Ok(new { status = "ok", reconstructionAvailable = runner.IsAvailable }));
+app.MapGet("/health", (IReconstructionRunner runner, GuidedScanManager scans) => Results.Ok(new { status = "ok", reconstructionAvailable = runner.IsAvailable, guidedCaptureAvailable = scans.IsAvailable }));
+app.MapPost("/scans", async (GuidedScanManager scans, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var scan = await scans.CreateAsync(cancellationToken);
+        return scan is null ? Results.Conflict(new { error = "Já existe uma prévia ativa. Aguarde ou grave sem prévia." })
+            : Results.Created($"/scans/{scan.ScanId}", scan);
+    }
+    catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+    { return Results.Json(new { error = "Prévia indisponível. A gravação pode continuar sem prévia." }, statusCode: 503); }
+});
+app.MapGet("/scans/{scanId:guid}", async (Guid scanId, GuidedScanManager scans, CancellationToken cancellationToken) =>
+{
+    var state = await scans.GetAsync(scanId, cancellationToken);
+    return state is null ? Results.NotFound() : Results.Ok(state);
+});
+app.MapPost("/scans/{scanId:guid}/frames", async (Guid scanId, HttpRequest request, GuidedScanManager scans, CancellationToken cancellationToken) =>
+{
+    const int limit = 1024 * 1024;
+    if (request.ContentType != "image/jpeg") return Results.BadRequest(new { error = "Envie um frame JPEG." });
+    if (request.ContentLength > limit) return Results.StatusCode(413);
+    using var memory = new MemoryStream();
+    var buffer = new byte[16384];
+    int count;
+    while ((count = await request.Body.ReadAsync(buffer, cancellationToken)) > 0)
+    {
+        if (memory.Length + count > limit) return Results.StatusCode(413);
+        memory.Write(buffer, 0, count);
+    }
+    if (memory.Length == 0) return Results.BadRequest(new { error = "Frame vazio." });
+    try { return Results.Ok(await scans.ProcessAsync(scanId, memory.ToArray(), cancellationToken)); }
+    catch (KeyNotFoundException) { return Results.NotFound(); }
+    catch (GuidedScanManager.ScanBusyException) { return Results.Conflict(new { error = "Um frame já está sendo processado." }); }
+    catch (InvalidDataException) { return Results.UnprocessableEntity(new { error = "JPEG ilegível ou acima do limite de resolução." }); }
+    catch (InvalidOperationException ex) { return Results.Json(new { error = ex.Message }, statusCode: 503); }
+});
+app.MapGet("/scans/{scanId:guid}/world", async (Guid scanId, GuidedScanManager scans, CancellationToken cancellationToken) =>
+{
+    var state = await scans.GetAsync(scanId, cancellationToken);
+    var path = Path.Combine(scans.GetDirectory(scanId), "world.json");
+    return state is null ? Results.NotFound() : File.Exists(path)
+        ? Results.File(path, "application/json") : Results.Conflict(new { error = "A prévia ainda precisa de vistas com deslocamento." });
+});
+app.MapPost("/scans/{scanId:guid}/stop", async (Guid scanId, GuidedScanManager scans, CancellationToken cancellationToken) =>
+{
+    if (await scans.GetAsync(scanId, cancellationToken) is null) return Results.NotFound();
+    await scans.StopScanAsync(scanId);
+    return Results.Ok(await scans.GetAsync(scanId, cancellationToken));
+});
 app.MapPost("/sessions", async (CaptureSessionStore store, CancellationToken cancellationToken) =>
 {
     var session = await store.CreateAsync(cancellationToken);
