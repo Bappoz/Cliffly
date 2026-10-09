@@ -13,14 +13,20 @@
     "test:e2e": "playwright test",
     "test:depth": "node scripts/verify-depth.mjs",
     "predev": "node scripts/prepare-onnx.mjs",
-    "prebuild": "node scripts/prepare-onnx.mjs"
+    "prebuild": "node scripts/prepare-onnx.mjs",
+    "preview": "vite preview --host localhost",
+    "pretest:e2e": "npm run build",
+    "pretest:depth": "npm run build",
+    "format": "prettier --write web scripts *.js *.json README.md docs/PLANO_PRODUTO.md docs/VALIDACAO.md docs/issues .github/workflows",
+    "format:check": "prettier --check web scripts *.js *.json README.md docs/PLANO_PRODUTO.md docs/VALIDACAO.md docs/issues .github/workflows"
   },
   "dependencies": {
-    "three": "^0.180.0",
-    "@huggingface/transformers": "3.8.1"
+    "@huggingface/transformers": "3.8.1",
+    "three": "^0.180.0"
   },
   "devDependencies": {
-    "vite": "^7.1.0",
-    "@playwright/test": "^1.56.0"
+    "@playwright/test": "^1.56.0",
+    "prettier": "^3.9.9",
+    "vite": "^7.1.0"
   }
 }

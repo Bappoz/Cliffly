@@ -32,8 +32,9 @@ profundidade sintética conhecida, identificada como demonstração.
 - Interface local com JavaScript, Vite e Three.js: getUserMedia, amostragem RGB,
   projeção e renderização por InstancedMesh. Sem React para esta interface pequena.
 - Depth Anything V2 Small / Transformers.js em Web Worker, carregado só após
-  ação explícita. WASM para compatibilidade; uma inferência por vez, sem fila de
-  frames antigos. Cor e profundidade sempre pertencem ao mesmo frame.
+  ação explícita. WebGPU quando disponível e WASM para compatibilidade; uma inferência por vez, sem fila de
+  frames antigos. Entrada da IA reduzida para 224 pixels; detalhe fino depende da
+  resolução de inferência, independentemente da resolução dos blocos. Cor e profundidade sempre pertencem ao mesmo frame.
 - Modo básico funciona sem baixar modelo. Câmera processada no navegador;
   nenhum vídeo é enviado ao servidor automaticamente.
 - Snapshot JSON versionado, PLY com posições e cores e PNG da visualização.
@@ -41,20 +42,20 @@ profundidade sintética conhecida, identificada como demonstração.
 
 ## Entregas e ordem dos chunks
 
-| Issue | Entrega | Critério de aceite |
-| --- | --- | --- |
-| 01 | Plano, histórico público limpo e rastreabilidade | Issues criadas antes do código; capturas não publicadas |
-| 02 | Ingestão confiável e testes do backend | Upload concorrente, arquivo vazio, erro FFmpeg, shutdown e manifests atômicos |
-| 03 | Núcleo de projeção e snapshots | Testes de cor, orientação, profundidade, estabilidade e limites |
-| 04 | Studio local com webcam e demo | Permissão explícita, parar libera câmera, controles acessíveis, WebGL e fallback |
-| 05 | Profundidade estimada por IA | Worker, progresso, falhas recuperáveis, frame sincronizado, sem inferências sobrepostas |
-| 06 | Congelar, explorar e exportar | Órbita, restauração JSON, export PLY/PNG e configurações persistidas |
-| 07 | Verificação e documentação de uso | Testes automatizados, navegador com câmera simulada, build e CI |
-| 08 | Calibração e benchmark de fidelidade | Intrínsecos reais, cena de referência, métricas de cor e reprojeção |
-| 09 | Rastreamento de pose e reconstrução persistente | Testes multivista, recuperação após perder tracking, nenhuma fusão sem pose |
-| 10 | Objetos e materiais | Segmentação avaliada e paleta Minecraft opcional; cores reais como padrão |
-| 11 | Fonte móvel e pareamento Bluetooth | Prova de transporte no Android; controle/pareamento BLE, vídeo por canal validado |
-| 12 | Exportação de mundo Minecraft | Formato escolhido e importado em uma instalação real; escala e licenças definidas |
+| Issue | Entrega                                          | Critério de aceite                                                                      |
+| ----- | ------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| 01    | Plano, histórico público limpo e rastreabilidade | Issues criadas antes do código; capturas não publicadas                                 |
+| 02    | Ingestão confiável e testes do backend           | Upload concorrente, arquivo vazio, erro FFmpeg, shutdown e manifests atômicos           |
+| 03    | Núcleo de projeção e snapshots                   | Testes de cor, orientação, profundidade, estabilidade e limites                         |
+| 04    | Studio local com webcam e demo                   | Permissão explícita, parar libera câmera, controles acessíveis, WebGL e fallback        |
+| 05    | Profundidade estimada por IA                     | Worker, progresso, falhas recuperáveis, frame sincronizado, sem inferências sobrepostas |
+| 06    | Congelar, explorar e exportar                    | Órbita, restauração JSON, export PLY/PNG e configurações persistidas                    |
+| 07    | Verificação e documentação de uso                | Testes automatizados, navegador com câmera simulada, build e CI                         |
+| 08    | Calibração e benchmark de fidelidade             | Intrínsecos reais, cena de referência, métricas de cor e reprojeção                     |
+| 09    | Rastreamento de pose e reconstrução persistente  | Testes multivista, recuperação após perder tracking, nenhuma fusão sem pose             |
+| 10    | Objetos e materiais                              | Segmentação avaliada e paleta Minecraft opcional; cores reais como padrão               |
+| 11    | Fonte móvel e pareamento Bluetooth               | Prova de transporte no Android; controle/pareamento BLE, vídeo por canal validado       |
+| 12    | Exportação de mundo Minecraft                    | Formato escolhido e importado em uma instalação real; escala e licenças definidas       |
 
 Issues 01–07 constituem a primeira versão. Issues 08–12 são o roteiro para um
 mundo reconstruído e a conexão móvel, sem dependência para usar a webcam hoje.

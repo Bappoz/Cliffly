@@ -16,3 +16,4 @@ test-results/
 .env.*
 !.env.example
 web/public/onnx/
+test-results-depth/
