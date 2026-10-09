@@ -48,5 +48,6 @@ def test_real_multiview_reconstructs_a_room(tmp_path):
     points = np.array(world['points']).reshape(-1, 7)
     assert np.isfinite(points).all()
     assert np.ptp(points[:, 2]) > 5
+    assert points[:, 2].max() > -12, 'Foreground objects must survive dense filtering'
     assert len(world['cameras']) >= 15
     assert (tmp_path / 'output/world.json').is_file()

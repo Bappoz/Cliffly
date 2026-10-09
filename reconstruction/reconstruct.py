@@ -129,7 +129,11 @@ def reconstruct(frames, output, max_frames=60):
     rgb = np.array([p.color for p in points])
     low, high = np.percentile(xyz, [2, 98], axis=0)
     margin = np.maximum((high - low) * .15, .05)
-    bounds = (low - margin, high + margin)
+    # Sparse features may concentrate on a textured far wall. Include camera
+    # centers so dense stereo can recover foreground surfaces absent from SfM.
+    camera_centers = np.array([i.projection_center() for i in images])
+    bounds = (np.minimum(low, camera_centers.min(axis=0)) - margin,
+              np.maximum(high, camera_centers.max(axis=0)) + margin)
     sparse_valid = (xyz >= bounds[0]).all(axis=1) & (xyz <= bounds[1]).all(axis=1)
     xyz, rgb = xyz[sparse_valid], rgb[sparse_valid]
     point_sets, color_sets = [xyz], [rgb]
